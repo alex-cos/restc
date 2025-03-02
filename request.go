@@ -142,6 +142,7 @@ func (r *Request) SetQueryParams(params map[string]string) *Request {
 }
 
 func (r *Request) SetQueryParamsFromValues(params _url.Values) *Request {
+	r.ensureQueryParams()
 	for p, v := range params {
 		for _, pv := range v {
 			r.queryParams.Add(p, pv)
