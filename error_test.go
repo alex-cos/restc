@@ -60,7 +60,7 @@ func TestGetWithWrongType(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Equal(t, "application/json", resp.ContentType())
+	assert.Contains(t, resp.ContentType(), "application/json")
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 
@@ -95,7 +95,7 @@ func TestGetJSONErrorWithType(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 500, resp.StatusCode())
 	assert.Equal(t, "500 Internal Server Error", resp.Status())
-	assert.Equal(t, "application/json", resp.ContentType())
+	assert.Contains(t, resp.ContentType(), "application/json")
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.NotNil(t, resp.Content())

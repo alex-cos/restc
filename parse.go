@@ -2,8 +2,8 @@ package restc
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"strings"
 )
 
 func DefaultParseResponse(request *Request, response *Response) (any, error) {
@@ -12,7 +12,9 @@ func DefaultParseResponse(request *Request, response *Response) (any, error) {
 		err     error
 	)
 
-	switch response.ContentType() {
+	contentType := response.ContentType()
+	contentType = strings.TrimSpace(strings.Split(contentType, ";")[0])
+	switch contentType {
 	case TypeApplicationJSON:
 		content = request.GetResponseType()
 		err = json.Unmarshal(response.Bytes(), &content)
@@ -21,7 +23,7 @@ func DefaultParseResponse(request *Request, response *Response) (any, error) {
 		}
 
 	default:
-		return nil, errors.New("unexpected response type")
+		return nil, fmt.Errorf("unexpected response type '%s'", contentType)
 	}
 
 	return content, nil
@@ -33,7 +35,9 @@ func DefaultParseError(request *Request, response *Response) (any, error) {
 		err     error
 	)
 
-	switch response.ContentType() {
+	contentType := response.ContentType()
+	contentType = strings.TrimSpace(strings.Split(contentType, ";")[0])
+	switch contentType {
 	case TypeApplicationJSON:
 		content = request.GetErrorRespType()
 		err := json.Unmarshal(response.Bytes(), &content)
@@ -46,7 +50,7 @@ func DefaultParseError(request *Request, response *Response) (any, error) {
 			return nil, fmt.Errorf("failed to parse HTML response: %w", err)
 		}
 	default:
-		return nil, errors.New("unexpected response type")
+		return nil, fmt.Errorf("unexpected response type '%s'", contentType)
 	}
 
 	return content, nil

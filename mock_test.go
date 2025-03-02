@@ -83,7 +83,7 @@ func (m *Mock) create() {
 	var status string
 
 	if m.Header.Get(restc.ContentType) == "" {
-		m.Header.Set(restc.ContentType, restc.TypeApplicationJSON)
+		m.Header.Set(restc.ContentType, "application/json; charset=utf-8")
 	}
 
 	body := io.NopCloser(strings.NewReader(m.Content))
