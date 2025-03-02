@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	defaultTimeout     = 12 * time.Second
-	defaultWaitTime    = time.Duration(100) * time.Millisecond
-	defaultMaxWaitTime = time.Duration(2000) * time.Millisecond
+	DefaultTimeout     = 12 * time.Second
+	DefaultWaitTime    = time.Duration(100) * time.Millisecond
+	DefaultMaxWaitTime = time.Duration(2000) * time.Millisecond
 )
 
 type HTTPClient interface {
@@ -38,7 +38,7 @@ func New(entryPoint string) *Client {
 }
 
 func NewWithClient(entryPoint string, client HTTPClient) *Client {
-	return NewWithClientTimeout(entryPoint, client, defaultTimeout)
+	return NewWithClientTimeout(entryPoint, client, DefaultTimeout)
 }
 
 func NewWithTimeout(entryPoint string, timeout time.Duration) *Client {
@@ -51,8 +51,8 @@ func NewWithClientTimeout(entryPoint string, httpClient HTTPClient, timeout time
 		client:           httpClient,
 		timeout:          timeout,
 		retryCount:       1,
-		retryWaitTime:    defaultWaitTime,
-		retryMaxWaitTime: defaultMaxWaitTime,
+		retryWaitTime:    DefaultWaitTime,
+		retryMaxWaitTime: DefaultMaxWaitTime,
 		parseResponse:    DefaultParseResponse,
 		parseError:       DefaultParseError,
 		mutex:            &sync.RWMutex{},
