@@ -32,6 +32,9 @@ type Request struct {
 	header        map[string]string
 	cookies       []*http.Cookie
 	body          any
+	formData      map[string]string
+	files         []*FileUpload
+	multipartErr  error
 	createdAt     time.Time
 	respType      any
 	errorRespType any
@@ -218,15 +221,34 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 		return nil, fmt.Errorf("unsupported URL scheme: %s", url.Scheme)
 	}
 
-	if r.body != nil {
+	if r.multipartErr != nil {
+		return nil, r.multipartErr
+	}
+
+	if len(r.formData) > 0 || len(r.files) > 0 {
+		reader, contentType, err := r.buildMultipartBody()
+		if err != nil {
+			return nil, err
+		}
+		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), reader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+		}
+		req.Header.Set(ContentType, contentType)
+	} else if r.body != nil {
 		reader, err = r.toReader()
 		if err != nil {
 			return nil, err
 		}
-	}
-	req, err = http.NewRequestWithContext(ctx, r.method, url.String(), reader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), reader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+		}
+	} else {
+		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+		}
 	}
 	req.URL.RawQuery = r.queryParams.Encode()
 
@@ -263,7 +285,7 @@ func (r *Request) applyHeaders(req *http.Request) {
 	for key, value := range r.header {
 		req.Header.Set(key, value)
 	}
-	if r.body != nil && req.Header.Get(ContentType) == "" {
+	if len(r.formData) == 0 && len(r.files) == 0 && r.body != nil && req.Header.Get(ContentType) == "" {
 		req.Header.Set(ContentType, TypeApplicationJSON)
 	}
 	if r.authToken != "" {

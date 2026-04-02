@@ -17,6 +17,7 @@ RESTC is a lightweight Go library for executing HTTP requests with support for h
 - HTML error body text extraction
 - Optional response body size limit (DoS protection)
 - URL scheme validation (http/https only)
+- Multipart form data and file upload
 - Middleware chain for logging, tracing, metrics, etc.
 
 ## Installation
@@ -199,6 +200,32 @@ client.SetParseError(func(request *restc.Request, response *restc.Response) (any
     // Custom error parsing logic (supports HTML text extraction)
     return restc.DefaultParseError(request, response)
 })
+```
+
+### Multipart form data & file upload
+
+```go
+// Form fields only
+req := restc.Post("upload").
+    SetFormData(map[string]string{
+        "title": "My Document",
+        "desc":  "A test file",
+    })
+
+// With file from disk
+req := restc.Post("upload").
+    SetFormData(map[string]string{"title": "Avatar"}).
+    SetFile("photo", "/path/photo.jpg")
+
+// With file from io.Reader
+req := restc.Post("upload").
+    SetFormData(map[string]string{"id": "123"}).
+    SetFileReader("document", "report.pdf", pdfReader)
+
+// Multiple files
+req := restc.Post("upload").
+    SetFileReader("doc1", "a.txt", readerA).
+    SetFileReader("doc2", "b.txt", readerB)
 ```
 
 ### Middleware
