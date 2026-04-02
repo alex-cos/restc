@@ -35,6 +35,7 @@ type Client struct {
 	maxResponseSize  int64
 	parseResponse    ParseResponse
 	parseError       ParseResponse
+	middleware       *ClientMiddleware
 	mutex            *sync.RWMutex
 }
 
@@ -60,6 +61,7 @@ func NewWithClientTimeout(entryPoint string, httpClient HTTPClient, timeout time
 		retryMaxWaitTime: DefaultMaxWaitTime,
 		parseResponse:    DefaultParseResponse,
 		parseError:       DefaultParseError,
+		middleware:       NewClientMiddleware(),
 		mutex:            &sync.RWMutex{},
 	}
 }
@@ -120,11 +122,24 @@ func (c *Client) SetMaxResponseSize(size int64) {
 	c.maxResponseSize = size
 }
 
+func (c *Client) UseMiddleware(middleware ...Middleware) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.middleware.Use(middleware...)
+}
+
 func (c *Client) Execute(request *Request) (*Response, error) {
 	return c.ExecuteWithContext(context.Background(), request)
 }
 
 func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Response, error) {
+	return c.middleware.Execute(request, func(req *Request) (*Response, error) {
+		return c.doExecuteWithContext(ctx, req)
+	})
+}
+
+func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*Response, error) {
 	var (
 		resp *http.Response
 		err  error

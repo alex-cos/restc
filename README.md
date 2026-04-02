@@ -17,6 +17,7 @@ RESTC is a lightweight Go library for executing HTTP requests with support for h
 - HTML error body text extraction
 - Optional response body size limit (DoS protection)
 - URL scheme validation (http/https only)
+- Middleware chain for logging, tracing, metrics, etc.
 
 ## Installation
 
@@ -198,6 +199,29 @@ client.SetParseError(func(request *restc.Request, response *restc.Response) (any
     // Custom error parsing logic (supports HTML text extraction)
     return restc.DefaultParseError(request, response)
 })
+```
+
+### Middleware
+
+```go
+// Logging middleware
+client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+    start := time.Now()
+    resp, err := next(req)
+    log.Printf("[%s] %s %d (%s)", req.String(), resp.Status(), resp.StatusCode(), time.Since(start))
+    return resp, err
+})
+
+// Short-circuit middleware (skip execution)
+client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+    if req.GetAuthToken() == "" {
+        return nil, errors.New("missing auth token")
+    }
+    return next(req)
+})
+
+// Multiple middlewares execute in order (onion model)
+client.UseMiddleware(loggingMiddleware, tracingMiddleware, metricsMiddleware)
 ```
 
 ## Response API
