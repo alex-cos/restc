@@ -119,6 +119,8 @@ func (r *Request) Clone() *Request {
 		createdAt:     r.createdAt,
 		respType:      r.respType,
 		errorRespType: r.errorRespType,
+		timeout:       r.timeout,
+		multipartErr:  r.multipartErr,
 	}
 
 	if r.queryParams != nil {
@@ -172,11 +174,17 @@ func (r *Request) SetContentType(ct string) *Request {
 }
 
 func (r *Request) SetHeader(header, value string) *Request {
+	if r.header == nil {
+		r.header = make(map[string]string)
+	}
 	r.header[header] = value
 	return r
 }
 
 func (r *Request) SetHeaders(headers map[string]string) *Request {
+	if r.header == nil {
+		r.header = make(map[string]string)
+	}
 	for h, v := range headers {
 		r.SetHeader(h, v)
 	}
@@ -265,7 +273,11 @@ func (r *Request) GetErrorRespType() any {
 	return r.errorRespType
 }
 
-func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*http.Request, error) {
+func (r *Request) computeWithContext(
+	ctx context.Context,
+	entryPoint string,
+	defaultHeaders map[string]string,
+) (*http.Request, error) {
 	var (
 		req    *http.Request
 		err    error
@@ -331,7 +343,7 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 	}
 	req.URL.RawQuery = r.queryParams.Encode()
 
-	r.applyHeaders(req)
+	r.applyHeaders(req, defaultHeaders)
 
 	return req, err
 }
@@ -360,11 +372,17 @@ func (r *Request) toReader() (io.Reader, error) {
 	}
 }
 
-func (r *Request) applyHeaders(req *http.Request) {
+func (r *Request) applyHeaders(req *http.Request, defaultHeaders map[string]string) {
+	for key, value := range defaultHeaders {
+		req.Header.Set(key, value)
+	}
 	for key, value := range r.header {
 		req.Header.Set(key, value)
 	}
-	if len(r.formData) == 0 && len(r.files) == 0 && r.body != nil && req.Header.Get(ContentType) == "" {
+	if len(r.formData) == 0 &&
+		len(r.files) == 0 &&
+		r.body != nil &&
+		req.Header.Get(ContentType) == "" {
 		req.Header.Set(ContentType, TypeApplicationJSON)
 	}
 	if r.authToken != "" {

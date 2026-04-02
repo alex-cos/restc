@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -198,13 +197,7 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 	maxResponseSize := c.maxResponseSize
 	clientTimeout := c.timeout
 	redirectConfig := c.redirectConfig
-	defaultHeaders := make(map[string]string, len(c.defaultHeaders))
-	maps.Copy(defaultHeaders, c.defaultHeaders)
 	c.mutex.RUnlock()
-
-	for k, v := range defaultHeaders {
-		request.SetHeader(k, v)
-	}
 
 	timeout := clientTimeout
 	if request.timeout > 0 {
@@ -217,7 +210,7 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 
 	client := wrapWithRedirectPolicy(c.client, redirectConfig)
 
-	req, err := request.computeWithContext(ctx, entryPoint)
+	req, err := request.computeWithContext(ctx, entryPoint, c.defaultHeaders)
 	if err != nil {
 		return nil, err
 	}
