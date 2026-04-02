@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -36,6 +37,7 @@ type Client struct {
 	parseResponse    ParseResponse
 	parseError       ParseResponse
 	middleware       *ClientMiddleware
+	defaultHeaders   map[string]string
 	mutex            *sync.RWMutex
 }
 
@@ -122,6 +124,28 @@ func (c *Client) SetMaxResponseSize(size int64) {
 	c.maxResponseSize = size
 }
 
+func (c *Client) SetHeader(header, value string) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if c.defaultHeaders == nil {
+		c.defaultHeaders = make(map[string]string)
+	}
+	c.defaultHeaders[header] = value
+}
+
+func (c *Client) SetHeaders(headers map[string]string) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if c.defaultHeaders == nil {
+		c.defaultHeaders = make(map[string]string)
+	}
+	for k, v := range headers {
+		c.defaultHeaders[k] = v
+	}
+}
+
 func (c *Client) UseMiddleware(middleware ...Middleware) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -151,7 +175,13 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 	retryWaitTime := min(c.retryWaitTime, c.retryMaxWaitTime)
 	retryMaxWaitTime := c.retryMaxWaitTime
 	maxResponseBodySize := c.maxResponseSize
+	defaultHeaders := make(map[string]string, len(c.defaultHeaders))
+	maps.Copy(defaultHeaders, c.defaultHeaders)
 	c.mutex.RUnlock()
+
+	for k, v := range defaultHeaders {
+		request.SetHeader(k, v)
+	}
 
 	ctx, cancel := c.context(ctx)
 	if cancel != nil {

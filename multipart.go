@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -17,9 +18,7 @@ type FileUpload struct {
 
 func (r *Request) SetFormData(data map[string]string) *Request {
 	r.ensureFormData()
-	for k, v := range data {
-		r.formData[k] = v
-	}
+	maps.Copy(r.formData, data)
 	return r
 }
 
