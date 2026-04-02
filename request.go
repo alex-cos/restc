@@ -12,6 +12,17 @@ import (
 	"time"
 )
 
+var validMethodsMap = map[string]bool{
+	http.MethodGet:     true,
+	http.MethodPost:    true,
+	http.MethodPut:     true,
+	http.MethodDelete:  true,
+	http.MethodPatch:   true,
+	http.MethodHead:    true,
+	http.MethodOptions: true,
+	http.MethodTrace:   true,
+}
+
 type Request struct {
 	url           string
 	method        string
@@ -190,7 +201,7 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 		reader io.Reader
 	)
 
-	if !validMethods()[r.method] {
+	if !validMethodsMap[r.method] {
 		return nil, fmt.Errorf("invalid provided HTTP method: %s", r.method)
 	}
 
@@ -250,7 +261,7 @@ func (r *Request) toReader() (io.Reader, error) {
 
 func (r *Request) applyHeaders(req *http.Request) {
 	for key, value := range r.header {
-		req.Header.Add(key, value)
+		req.Header.Set(key, value)
 	}
 	if r.body != nil && req.Header.Get(ContentType) == "" {
 		req.Header.Set(ContentType, TypeApplicationJSON)
@@ -260,18 +271,5 @@ func (r *Request) applyHeaders(req *http.Request) {
 	}
 	for _, cookie := range r.cookies {
 		req.AddCookie(cookie)
-	}
-}
-
-func validMethods() map[string]bool {
-	return map[string]bool{
-		http.MethodGet:     true,
-		http.MethodPost:    true,
-		http.MethodPut:     true,
-		http.MethodDelete:  true,
-		http.MethodPatch:   true,
-		http.MethodHead:    true,
-		http.MethodOptions: true,
-		http.MethodTrace:   true,
 	}
 }
