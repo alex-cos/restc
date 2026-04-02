@@ -2,6 +2,7 @@ package restc
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"strings"
 )
@@ -21,7 +22,12 @@ func DefaultParseResponse(request *Request, response *Response) (any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
 		}
-
+	case TypeApplicationXML, TypeTextXML:
+		content = request.GetResponseType()
+		err = xml.Unmarshal(response.Bytes(), &content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse XML response: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("unexpected response type '%s'", contentType)
 	}
@@ -43,6 +49,12 @@ func DefaultParseError(request *Request, response *Response) (any, error) {
 		err = json.Unmarshal(response.Bytes(), &content)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
+		}
+	case TypeApplicationXML, TypeTextXML:
+		content = request.GetErrorRespType()
+		err = xml.Unmarshal(response.Bytes(), &content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse XML response: %w", err)
 		}
 	case TypeTextHTML:
 		content, err = getBodyConcatainedText(response.Bytes())
