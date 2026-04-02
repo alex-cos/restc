@@ -17,7 +17,7 @@ func TestMiddlewareSingle(t *testing.T) {
 	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, `{"id": 1}`))
 
-	client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+	client.UseMiddleware(func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 		atomic.AddInt32(&called, 1)
 		return next(req)
 	})
@@ -37,13 +37,13 @@ func TestMiddlewareMultipleOrder(t *testing.T) {
 		NewMockClient(http.StatusOK, `{"id": 1}`))
 
 	client.UseMiddleware(
-		func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+		func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 			order = append(order, 1)
 			resp, err := next(req)
 			order = append(order, 4)
 			return resp, err
 		},
-		func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+		func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 			order = append(order, 2)
 			resp, err := next(req)
 			order = append(order, 3)
@@ -63,7 +63,7 @@ func TestMiddlewareModifyRequest(t *testing.T) {
 	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, GetResponse))
 
-	client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+	client.UseMiddleware(func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 		req.SetHeader("X-Middleware", "added")
 		return next(req)
 	})
@@ -79,7 +79,7 @@ func TestMiddlewareModifyResponse(t *testing.T) {
 	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, GetResponse))
 
-	client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+	client.UseMiddleware(func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 		resp, err := next(req)
 		if err != nil {
 			return nil, err
@@ -101,10 +101,10 @@ func TestMiddlewareShortCircuit(t *testing.T) {
 	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, GetResponse))
 
-	client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+	client.UseMiddleware(func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 		return &restc.Response{}, nil
 	})
-	client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+	client.UseMiddleware(func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 		nextCalled = true
 		return next(req)
 	})
@@ -121,7 +121,7 @@ func TestMiddlewareError(t *testing.T) {
 	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, GetResponse))
 
-	client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*restc.Response, error)) (*restc.Response, error) {
+	client.UseMiddleware(func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
 		return nil, assert.AnError
 	})
 

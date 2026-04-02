@@ -100,6 +100,14 @@ func (r *Request) String() string {
 	return str
 }
 
+func (r *Request) Method() string {
+	return r.method
+}
+
+func (r *Request) URL() string {
+	return r.url
+}
+
 func (r *Request) Clone() *Request {
 	clone := &Request{
 		url:           r.url,

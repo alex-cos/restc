@@ -2,7 +2,9 @@ package restc
 
 import "sync"
 
-type Middleware func(req *Request, next func(req *Request) (*Response, error)) (*Response, error)
+type HandlerFunc func(req *Request) (*Response, error)
+
+type Middleware func(req *Request, next HandlerFunc) (*Response, error)
 
 type ClientMiddleware struct {
 	middlewares []Middleware
@@ -23,7 +25,7 @@ func (cm *ClientMiddleware) Use(middleware ...Middleware) {
 	cm.middlewares = append(cm.middlewares, middleware...)
 }
 
-func (cm *ClientMiddleware) Execute(req *Request, next func(req *Request) (*Response, error)) (*Response, error) {
+func (cm *ClientMiddleware) Execute(req *Request, next HandlerFunc) (*Response, error) {
 	cm.mutex.RLock()
 	middlewares := make([]Middleware, len(cm.middlewares))
 	copy(middlewares, cm.middlewares)
