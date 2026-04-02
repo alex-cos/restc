@@ -12,7 +12,7 @@ func TestRequestClone(t *testing.T) {
 	t.Parallel()
 
 	baseReq := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetQueryParam("limit", "10").
 		SetAuthToken("token123")
 
@@ -32,7 +32,7 @@ func TestRequestCloneIndependence(t *testing.T) {
 		NewMockClient(http.StatusOK, GetResponse))
 
 	baseReq := restc.Get("users").
-		SetHeader("Accept", "application/json")
+		SetHeader("Accept", restc.TypeApplicationJSON)
 
 	clonedReq := baseReq.Clone()
 	clonedReq.SetHeader("Accept", "application/xml")

@@ -64,7 +64,7 @@ client.SetMaxResponseSize(10 * 1024 * 1024) // 10 MB limit
 
 ```go
 req := restc.Get("users").
-    SetHeader("Accept", "application/json").
+    SetHeader("Accept", restc.TypeApplicationJSON).
     AddQueryParam("limit", "10")
 
 resp, err := client.Execute(req)

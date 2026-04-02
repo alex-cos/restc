@@ -54,7 +54,7 @@ func TestGetSucess(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())
@@ -85,7 +85,7 @@ func TestGetWithURL(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())
@@ -121,7 +121,7 @@ func TestGetWithCookies(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())
@@ -230,7 +230,7 @@ func TestGetWithParamsSucess(t *testing.T) {
 	req := restc.Get("users").
 		AddQueryParam("id", "2").
 		AddQueryParam("id", "4").
-		SetHeader("Accept", "application/json")
+		SetHeader("Accept", restc.TypeApplicationJSON)
 
 	if !testing.Short() {
 		fmt.Printf("req = %+v\n", req)
@@ -242,7 +242,7 @@ func TestGetWithParamsSucess(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())
@@ -264,8 +264,8 @@ func TestPostSucess(t *testing.T) {
 	client.SetTimeout(5 * time.Second)
 
 	req := restc.Post("users").
-		SetHeader("Accept", "application/json").
-		SetContentType("application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
+		SetContentType(restc.TypeApplicationJSON).
 		SetBody(`{
 			"firstname": "John",
 			"lastname": "Doe"
@@ -281,7 +281,7 @@ func TestPostSucess(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())
@@ -314,7 +314,7 @@ func TestUpdateSucess(t *testing.T) {
 		5*time.Second)
 
 	req := restc.Put("users/3").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetBody(`{
 			"firstname": "Paul",
 			"lastname": "Klein"
@@ -330,7 +330,7 @@ func TestUpdateSucess(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())
@@ -352,7 +352,7 @@ func TestPatchSucess(t *testing.T) {
 		5*time.Second)
 
 	req := restc.Patch("users/3").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetBody(`{"lastname": "Klein"}`)
 
 	if !testing.Short() {
@@ -365,7 +365,7 @@ func TestPatchSucess(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())
@@ -385,7 +385,7 @@ func TestDeleteSucess(t *testing.T) {
 		5*time.Second)
 
 	req := restc.Delete("users/3").
-		SetHeader("Accept", "application/json")
+		SetHeader("Accept", restc.TypeApplicationJSON)
 
 	if !testing.Short() {
 		fmt.Printf("req = %+v\n", req)
@@ -397,7 +397,7 @@ func TestDeleteSucess(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.Nil(t, resp.Content())

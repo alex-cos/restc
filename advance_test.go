@@ -29,7 +29,7 @@ func TestGetWithType(t *testing.T) {
 	client.SetEntryPoint("https://api.test.com")
 
 	req := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&[]DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
 
@@ -44,7 +44,7 @@ func TestGetWithType(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.NotEmpty(t, resp.Content())
@@ -66,7 +66,7 @@ func TestPostWithType(t *testing.T) {
 	client.SetEntryPoint("https://api.test.com")
 
 	req := restc.Post("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&DummyObject{}).
 		SetErrorRespType(&ReturnedError{}).
 		SetBody(&DummyObject{
@@ -85,7 +85,7 @@ func TestPostWithType(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.NotEmpty(t, resp.Content())

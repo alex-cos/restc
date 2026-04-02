@@ -20,16 +20,16 @@ func DefaultParseResponse(request *Request, response *Response) (any, error) {
 		content = request.GetResponseType()
 		err = json.Unmarshal(response.Bytes(), &content)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrParseJSON, err)
 		}
 	case TypeApplicationXML, TypeTextXML:
 		content = request.GetResponseType()
 		err = xml.Unmarshal(response.Bytes(), &content)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse XML response: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrParseXML, err)
 		}
 	default:
-		return nil, fmt.Errorf("unexpected response type '%s'", contentType)
+		return nil, fmt.Errorf("%w: '%s'", ErrUnexpectedType, contentType)
 	}
 
 	return content, nil
@@ -48,21 +48,21 @@ func DefaultParseError(request *Request, response *Response) (any, error) {
 		content = request.GetErrorRespType()
 		err = json.Unmarshal(response.Bytes(), &content)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrParseJSON, err)
 		}
 	case TypeApplicationXML, TypeTextXML:
 		content = request.GetErrorRespType()
 		err = xml.Unmarshal(response.Bytes(), &content)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse XML response: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrParseXML, err)
 		}
 	case TypeTextHTML:
 		content, err = getBodyConcatainedText(response.Bytes())
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse HTML response: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrParseHTML, err)
 		}
 	default:
-		return nil, fmt.Errorf("unexpected response type '%s'", contentType)
+		return nil, fmt.Errorf("%w: '%s'", ErrUnexpectedType, contentType)
 	}
 
 	return content, nil

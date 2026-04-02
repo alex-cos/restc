@@ -17,7 +17,7 @@ func TestGetWithAuth(t *testing.T) {
 	client.SetEntryPoint("https://api.test.com")
 
 	req := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetAuthToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImlhdCI6MTY3Mjc2NjAyOCwiZXhwIjoxNjc0NDk0MDI4fQ.kCak9sLJr74frSRVQp0_27BY4iBCgQSmoT3vQVWKzJg").
 		SetResponseType(&[]DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
@@ -33,7 +33,7 @@ func TestGetWithAuth(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.NotEmpty(t, resp.Content())

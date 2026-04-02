@@ -12,11 +12,14 @@ import (
 func getBodyConcatainedText(data []byte) (string, error) {
 	doc, err := html.Parse(bytes.NewReader(data))
 	if err != nil {
-		return "", fmt.Errorf("failed to parse HTML response: %w", err)
+		return "", fmt.Errorf("%w: %w", ErrParseHTML, err)
 	}
 	body := findNodeByTagName(doc, "body")
 	if body == nil {
-		return "", errors.New("can't find body node in HTML response")
+		return "", fmt.Errorf("%w: %w",
+			ErrParseHTML,
+			errors.New("can't find body node in HTML response"),
+		)
 	}
 	return concatAllText(body, ": "), nil
 }

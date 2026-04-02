@@ -228,13 +228,13 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 			break
 		}
 		if !isRetriableError(err) {
-			return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrHTTPRequest, err)
 		}
 		time.Sleep(retryWaitTime)
 		retryWaitTime = min(2*retryWaitTime, retryMaxWaitTime)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrHTTPRequest, err)
 	}
 
 	response := NewResponse(resp)
@@ -250,7 +250,7 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 
 	response.bodyBytes, err = io.ReadAll(reader)
 	if err != nil {
-		return response, fmt.Errorf("failed to read body response: %w", err)
+		return response, fmt.Errorf("%w: %w", ErrReadBody, err)
 	}
 	if response.IsError() && request.errorRespType != nil && c.parseError != nil {
 		response.content, err = c.parseError(request, response)

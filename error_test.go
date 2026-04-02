@@ -22,14 +22,14 @@ func TestWrongMethod(t *testing.T) {
 		NewMockClient(http.StatusOK, ""))
 
 	req := restc.NewRequest("ABCD", "users").
-		SetHeader("Accept", "application/json")
+		SetHeader("Accept", restc.TypeApplicationJSON)
 
 	if !testing.Short() {
 		fmt.Printf("req = %+v\n", req)
 	}
 
 	resp, err := client.Execute(req)
-	assert.ErrorContains(t, err, "invalid provided HTTP method")
+	assert.ErrorIs(t, err, restc.ErrInvalidMethod)
 	assert.Nil(t, resp)
 
 	if !testing.Short() {
@@ -45,7 +45,7 @@ func TestGetWithWrongType(t *testing.T) {
 	client.SetEntryPoint("https://api.test.com")
 
 	req := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
 
@@ -54,13 +54,13 @@ func TestGetWithWrongType(t *testing.T) {
 	}
 
 	resp, err := client.Execute(req)
-	assert.ErrorContains(t, err, "failed to parse JSON response")
+	assert.ErrorIs(t, err, restc.ErrParseJSON)
 	assert.NotNil(t, resp)
 	assert.False(t, resp.IsError())
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "200 OK", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 
@@ -80,7 +80,7 @@ func TestGetJSONErrorWithType(t *testing.T) {
 	 }`))
 
 	req := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&[]DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
 
@@ -95,7 +95,7 @@ func TestGetJSONErrorWithType(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
 	assert.Equal(t, 500, resp.StatusCode())
 	assert.Equal(t, "500 Internal Server Error", resp.Status())
-	assert.Contains(t, resp.ContentType(), "application/json")
+	assert.Contains(t, resp.ContentType(), restc.TypeApplicationJSON)
 	assert.NotZero(t, resp.ReceivedAt())
 	assert.NotEmpty(t, resp.Bytes())
 	assert.NotNil(t, resp.Content())
@@ -137,7 +137,7 @@ func TestGetUnexpectedType(t *testing.T) {
 	client := restc.NewWithClient("https://api.test.com", httpclient)
 
 	req := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&[]DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
 
@@ -146,7 +146,7 @@ func TestGetUnexpectedType(t *testing.T) {
 	}
 
 	resp, err := client.Execute(req)
-	assert.ErrorContains(t, err, "unexpected response type")
+	assert.ErrorIs(t, err, restc.ErrUnexpectedType)
 	assert.NotNil(t, resp)
 	assert.False(t, resp.IsError())
 	assert.Equal(t, "HTTP/2.0", resp.Proto())
@@ -175,7 +175,7 @@ func TestGetHTMLErrorWithType(t *testing.T) {
 	client := restc.NewWithClient("https://api.test.com", httpclient)
 
 	req := restc.Get("xxxxx").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&[]DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
 
@@ -211,7 +211,7 @@ func TestGetWithWrongURL(t *testing.T) {
 	client.SetRetryMaxWaitTime(time.Second)
 
 	req := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&[]DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
 
@@ -234,7 +234,7 @@ func TestGetWithWrongProtocl(t *testing.T) {
 	client.SetRetryMaxWaitTime(time.Second)
 
 	req := restc.Get("users").
-		SetHeader("Accept", "application/json").
+		SetHeader("Accept", restc.TypeApplicationJSON).
 		SetResponseType(&[]DummyObject{}).
 		SetErrorRespType(&ReturnedError{})
 

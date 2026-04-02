@@ -273,20 +273,20 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 	)
 
 	if !validMethodsMap[r.method] {
-		return nil, fmt.Errorf("invalid provided HTTP method: %s", r.method)
+		return nil, fmt.Errorf("%w: method='%s'", ErrInvalidMethod, r.method)
 	}
 
 	url, err := _url.Parse(r.url)
 	if err != nil || !url.IsAbs() {
 		entryPointURL, err := _url.Parse(entryPoint)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse given entry point: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrInvalidEntryPoint, err)
 		}
 		url = entryPointURL.JoinPath(r.url)
 	}
 
 	if url.Scheme != "http" && url.Scheme != "https" {
-		return nil, fmt.Errorf("unsupported URL scheme: %s", url.Scheme)
+		return nil, fmt.Errorf("%w: scheme='%s'", ErrUnsupportedScheme, url.Scheme)
 	}
 
 	if r.multipartErr != nil {
@@ -301,7 +301,7 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 		encoded := data.Encode()
 		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), strings.NewReader(encoded))
 		if err != nil {
-			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
 		req.Header.Set(ContentType, TypeApplicationFormURLEncoded)
 	} else if len(r.formData) > 0 || len(r.files) > 0 {
@@ -311,7 +311,7 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 		}
 		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), reader)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
 		req.Header.Set(ContentType, contentType)
 	} else if r.body != nil {
@@ -321,12 +321,12 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 		}
 		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), reader)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
 	} else {
 		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
 	}
 	req.URL.RawQuery = r.queryParams.Encode()
@@ -353,7 +353,7 @@ func (r *Request) toReader() (io.Reader, error) {
 	default:
 		jsonData, err := json.Marshal(body)
 		if err != nil {
-			return nil, fmt.Errorf("unsupported body type %T: %w", body, err)
+			return nil, fmt.Errorf("%w type='%T': %w", ErrUnsupportedBody, body, err)
 		}
 		r.SetContentType(TypeApplicationJSON)
 		return bytes.NewReader(jsonData), nil

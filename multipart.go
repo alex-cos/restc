@@ -58,22 +58,31 @@ func (r *Request) buildMultipartBody() (io.Reader, string, error) {
 
 	for k, v := range r.formData {
 		if err := writer.WriteField(k, v); err != nil {
-			return nil, "", fmt.Errorf("failed to write form field %q: %w", k, err)
+			return nil, "", fmt.Errorf("%w: %w",
+				ErrMultipart,
+				fmt.Errorf("failed to write form field '%q': %w", k, err),
+			)
 		}
 	}
 
 	for _, file := range r.files {
 		part, err := writer.CreateFormFile(file.FieldName, file.FileName)
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to create form file %q: %w", file.FieldName, err)
+			return nil, "", fmt.Errorf("%w: %w",
+				ErrMultipart,
+				fmt.Errorf("failed to create form file '%q': %w", file.FieldName, err),
+			)
 		}
 		if _, err := io.Copy(part, file.Reader); err != nil {
-			return nil, "", fmt.Errorf("failed to write file %q: %w", file.FileName, err)
+			return nil, "", fmt.Errorf("%w: %w",
+				ErrMultipart,
+				fmt.Errorf("failed to write form file '%q': %w", file.FieldName, err),
+			)
 		}
 	}
 
 	if err := writer.Close(); err != nil {
-		return nil, "", fmt.Errorf("failed to close multipart writer: %w", err)
+		return nil, "", fmt.Errorf("%w: %w", ErrMultipart, err)
 	}
 
 	return &buf, writer.FormDataContentType(), nil

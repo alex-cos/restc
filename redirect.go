@@ -1,12 +1,9 @@
 package restc
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 )
-
-var ErrMaxRedirects = errors.New("maximum redirects exceeded")
 
 type RedirectPolicy int
 
@@ -26,7 +23,10 @@ func (rc RedirectConfig) checkRedirect(_ *http.Request, via []*http.Request) err
 		return http.ErrUseLastResponse
 	case FollowRedirects:
 		if rc.maxRedirects > 0 && len(via) >= rc.maxRedirects {
-			return fmt.Errorf("stopped after %d redirects", rc.maxRedirects)
+			return fmt.Errorf("%w: %w",
+				ErrMaxRedirects,
+				fmt.Errorf("stopped after %d redirects", rc.maxRedirects),
+			)
 		}
 		return nil
 	default:
