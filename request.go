@@ -24,20 +24,21 @@ var validMethodsMap = map[string]bool{
 }
 
 type Request struct {
-	url           string
-	method        string
-	authToken     string
-	authScheme    string
-	queryParams   _url.Values
-	header        map[string]string
-	cookies       []*http.Cookie
-	body          any
-	formData      map[string]string
-	files         []*FileUpload
-	multipartErr  error
-	createdAt     time.Time
-	respType      any
-	errorRespType any
+	url            string
+	method         string
+	authToken      string
+	authScheme     string
+	queryParams    _url.Values
+	header         map[string]string
+	cookies        []*http.Cookie
+	body           any
+	formData       map[string]string
+	formURLEncoded map[string]string
+	files          []*FileUpload
+	multipartErr   error
+	createdAt      time.Time
+	respType       any
+	errorRespType  any
 }
 
 func NewRequest(method, url string) *Request {
@@ -169,6 +170,11 @@ func (r *Request) SetBody(body any) *Request {
 	return r
 }
 
+func (r *Request) SetFormURLEncoded(data map[string]string) *Request {
+	r.formURLEncoded = data
+	return r
+}
+
 func (r *Request) SetAuthToken(authToken string) *Request {
 	r.authToken = authToken
 	return r
@@ -225,7 +231,18 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 		return nil, r.multipartErr
 	}
 
-	if len(r.formData) > 0 || len(r.files) > 0 {
+	if len(r.formURLEncoded) > 0 {
+		data := _url.Values{}
+		for k, v := range r.formURLEncoded {
+			data.Set(k, v)
+		}
+		encoded := data.Encode()
+		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), strings.NewReader(encoded))
+		if err != nil {
+			return nil, fmt.Errorf("failed to build HTTP request: %w", err)
+		}
+		req.Header.Set(ContentType, TypeApplicationFormURLEncoded)
+	} else if len(r.formData) > 0 || len(r.files) > 0 {
 		reader, contentType, err := r.buildMultipartBody()
 		if err != nil {
 			return nil, err

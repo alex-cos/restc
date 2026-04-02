@@ -180,3 +180,35 @@ func TestMultipartParseMultipartForm(t *testing.T) {
 	assert.Equal(t, "test.txt", parsedForm.File["file"][0].Filename)
 	assert.NotNil(t, resp)
 }
+
+func TestFormURLEncoded(t *testing.T) {
+	t.Parallel()
+
+	var capturedBody []byte
+	var capturedContentType string
+
+	mockClient := &multipartMock{}
+	mockClient.onDo = func(req *http.Request) (*http.Response, error) {
+		body, _ := io.ReadAll(req.Body)
+		capturedBody = body
+		capturedContentType = req.Header.Get("Content-Type")
+		return mockClient.mockResponse()
+	}
+
+	client := restc.NewWithClient("https://api.test.com", mockClient)
+
+	req := restc.Post("login").
+		SetFormURLEncoded(map[string]string{
+			"username": "john",
+			"password": "secret",
+		})
+
+	resp, err := client.Execute(req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "application/x-www-form-urlencoded", capturedContentType)
+
+	bodyStr := string(capturedBody)
+	assert.Contains(t, bodyStr, "username=john")
+	assert.Contains(t, bodyStr, "password=secret")
+}

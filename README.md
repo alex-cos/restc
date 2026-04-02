@@ -228,6 +228,16 @@ req := restc.Post("upload").
     SetFileReader("doc2", "b.txt", readerB)
 ```
 
+### URL-encoded form data
+
+```go
+req := restc.Post("login").
+    SetFormURLEncoded(map[string]string{
+        "username": "john",
+        "password": "secret",
+    })
+```
+
 ### Middleware
 
 ```go
