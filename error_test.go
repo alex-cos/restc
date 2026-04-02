@@ -223,3 +223,26 @@ func TestGetWithWrongURL(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
+
+func TestGetWithWrongProtocl(t *testing.T) {
+	t.Parallel()
+
+	client := restc.New("xxxxx://api.test.com")
+	client.SetTimeout(500 * time.Millisecond)
+	client.SetRetryCount(2)
+	client.SetRetryWaitTime(25 * time.Millisecond)
+	client.SetRetryMaxWaitTime(time.Second)
+
+	req := restc.Get("users").
+		SetHeader("Accept", "application/json").
+		SetResponseType(&[]DummyObject{}).
+		SetErrorRespType(&ReturnedError{})
+
+	if !testing.Short() {
+		fmt.Printf("req = %+v\n", req)
+	}
+
+	resp, err := client.Execute(req)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}

@@ -204,6 +204,10 @@ func (r *Request) computeWithContext(ctx context.Context, entryPoint string) (*h
 		url = entryPointURL.JoinPath(r.url)
 	}
 
+	if url.Scheme != "http" && url.Scheme != "https" {
+		return nil, fmt.Errorf("unsupported URL scheme: %s", url.Scheme)
+	}
+
 	if r.body != nil {
 		reader, err = r.toReader()
 		if err != nil {
