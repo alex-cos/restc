@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	_url "net/url"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -240,21 +239,12 @@ func (r *Request) toReader() (io.Reader, error) {
 	case io.Reader:
 		return body, nil
 	default:
-		typ := reflect.TypeOf(body)
-		if typ.Kind() == reflect.Ptr {
-			typ = typ.Elem()
+		jsonData, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("unsupported body type %T: %w", body, err)
 		}
-		if typ.Kind() == reflect.Struct ||
-			typ.Kind() == reflect.Array ||
-			typ.Kind() == reflect.Slice {
-			jsonData, err := json.Marshal(body)
-			if err != nil {
-				return nil, err
-			}
-			r.SetContentType(TypeApplicationJSON)
-			return bytes.NewReader(jsonData), nil
-		}
-		return nil, fmt.Errorf("unsupported type: %T", body)
+		r.SetContentType(TypeApplicationJSON)
+		return bytes.NewReader(jsonData), nil
 	}
 }
 
