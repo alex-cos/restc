@@ -32,6 +32,7 @@ type Client struct {
 	retryCount       int
 	retryWaitTime    time.Duration
 	retryMaxWaitTime time.Duration
+	maxResponseSize  int64
 	parseResponse    ParseResponse
 	parseError       ParseResponse
 	mutex            *sync.RWMutex
@@ -112,6 +113,13 @@ func (c *Client) SetParseError(parseError ParseResponse) {
 	c.parseError = parseError
 }
 
+func (c *Client) SetMaxResponseSize(size int64) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.maxResponseSize = size
+}
+
 func (c *Client) Execute(request *Request) (*Response, error) {
 	return c.ExecuteWithContext(context.Background(), request)
 }
@@ -127,6 +135,7 @@ func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Res
 	retryCount := c.retryCount
 	retryWaitTime := minDuration(c.retryWaitTime, c.retryMaxWaitTime)
 	retryMaxWaitTime := c.retryMaxWaitTime
+	maxResponseBodySize := c.maxResponseSize
 	c.mutex.RUnlock()
 
 	ctx, cancel := c.context(ctx)
@@ -160,7 +169,12 @@ func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Res
 	}
 	defer resp.Body.Close()
 
-	response.bodyBytes, err = io.ReadAll(resp.Body)
+	var reader io.Reader = resp.Body
+	if maxResponseBodySize > 0 {
+		reader = io.LimitReader(resp.Body, maxResponseBodySize)
+	}
+
+	response.bodyBytes, err = io.ReadAll(reader)
 	if err != nil {
 		return response, fmt.Errorf("failed to read body response: %w", err)
 	}
