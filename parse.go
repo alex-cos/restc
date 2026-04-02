@@ -40,7 +40,7 @@ func DefaultParseError(request *Request, response *Response) (any, error) {
 	switch contentType {
 	case TypeApplicationJSON:
 		content = request.GetErrorRespType()
-		err := json.Unmarshal(response.Bytes(), &content)
+		err = json.Unmarshal(response.Bytes(), &content)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse JSON response: %w", err)
 		}
