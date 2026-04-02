@@ -133,7 +133,7 @@ func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Res
 	c.mutex.RLock()
 	entryPoint := c.entryPoint
 	retryCount := c.retryCount
-	retryWaitTime := minDuration(c.retryWaitTime, c.retryMaxWaitTime)
+	retryWaitTime := min(c.retryWaitTime, c.retryMaxWaitTime)
 	retryMaxWaitTime := c.retryMaxWaitTime
 	maxResponseBodySize := c.maxResponseSize
 	c.mutex.RUnlock()
@@ -157,7 +157,7 @@ func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Res
 			return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
 		}
 		time.Sleep(retryWaitTime)
-		retryWaitTime = minDuration(2*retryWaitTime, retryMaxWaitTime)
+		retryWaitTime = min(2*retryWaitTime, retryMaxWaitTime)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
