@@ -37,6 +37,7 @@ type Request struct {
 	formURLEncoded map[string]string
 	files          []*FileUpload
 	multipartErr   error
+	timeout        time.Duration
 	createdAt      time.Time
 	respType       any
 	errorRespType  any
@@ -238,6 +239,11 @@ func (r *Request) SetAuthToken(authToken string) *Request {
 
 func (r *Request) SetAuthScheme(scheme string) *Request {
 	r.authScheme = scheme
+	return r
+}
+
+func (r *Request) SetTimeout(timeout time.Duration) *Request {
+	r.timeout = timeout
 	return r
 }
 

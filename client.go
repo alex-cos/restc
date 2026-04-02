@@ -175,6 +175,7 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 	retryWaitTime := min(c.retryWaitTime, c.retryMaxWaitTime)
 	retryMaxWaitTime := c.retryMaxWaitTime
 	maxResponseBodySize := c.maxResponseSize
+	clientTimeout := c.timeout
 	defaultHeaders := make(map[string]string, len(c.defaultHeaders))
 	maps.Copy(defaultHeaders, c.defaultHeaders)
 	c.mutex.RUnlock()
@@ -183,7 +184,11 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 		request.SetHeader(k, v)
 	}
 
-	ctx, cancel := c.context(ctx)
+	timeout := clientTimeout
+	if request.timeout > 0 {
+		timeout = request.timeout
+	}
+	ctx, cancel := c.contextWithTimeout(ctx, timeout)
 	if cancel != nil {
 		defer cancel()
 	}
@@ -239,15 +244,11 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 	return response, nil
 }
 
-func (c *Client) context(ctx context.Context) (context.Context, context.CancelFunc) {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
+func (c *Client) contextWithTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	var cancel context.CancelFunc
-	if c.timeout > 0 {
-		ctx, cancel = context.WithTimeout(ctx, c.timeout)
+	if timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, timeout)
 	}
-
 	return ctx, cancel
 }
 
