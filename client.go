@@ -2,9 +2,13 @@ package restc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -140,6 +144,9 @@ func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Res
 		if err == nil {
 			break
 		}
+		if !isRetriableError(err) {
+			return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
+		}
 		time.Sleep(retryWaitTime)
 		retryWaitTime = minDuration(2*retryWaitTime, retryMaxWaitTime)
 	}
@@ -183,4 +190,34 @@ func (c *Client) context(ctx context.Context) (context.Context, context.CancelFu
 	}
 
 	return ctx, cancel
+}
+
+func isRetriableError(err error) bool {
+	var (
+		netErr net.Error
+		urlErr *url.Error
+	)
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+
+	if errors.As(err, &urlErr) {
+		if urlErr.Op == "parse" {
+			return false
+		}
+		err := urlErr.Err
+		if err != nil && strings.Contains(err.Error(), "unsupported protocol scheme") {
+			return false
+		}
+	}
+
+	return true
 }
