@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	_url "net/url"
 	"strings"
@@ -97,6 +98,53 @@ func (r *Request) String() string {
 	}
 
 	return str
+}
+
+func (r *Request) Clone() *Request {
+	clone := &Request{
+		url:           r.url,
+		method:        r.method,
+		authToken:     r.authToken,
+		authScheme:    r.authScheme,
+		body:          r.body,
+		createdAt:     r.createdAt,
+		respType:      r.respType,
+		errorRespType: r.errorRespType,
+	}
+
+	if r.queryParams != nil {
+		clone.queryParams = make(_url.Values, len(r.queryParams))
+		for k, v := range r.queryParams {
+			clone.queryParams[k] = append([]string(nil), v...)
+		}
+	}
+
+	if r.header != nil {
+		clone.header = make(map[string]string, len(r.header))
+		maps.Copy(clone.header, r.header)
+	}
+
+	if r.cookies != nil {
+		clone.cookies = make([]*http.Cookie, len(r.cookies))
+		copy(clone.cookies, r.cookies)
+	}
+
+	if r.formData != nil {
+		clone.formData = make(map[string]string, len(r.formData))
+		maps.Copy(clone.formData, r.formData)
+	}
+
+	if r.formURLEncoded != nil {
+		clone.formURLEncoded = make(map[string]string, len(r.formURLEncoded))
+		maps.Copy(clone.formURLEncoded, r.formURLEncoded)
+	}
+
+	if r.files != nil {
+		clone.files = make([]*FileUpload, len(r.files))
+		copy(clone.files, r.files)
+	}
+
+	return clone
 }
 
 func (r *Request) SetURL(url string) *Request {
