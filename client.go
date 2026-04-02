@@ -37,6 +37,7 @@ type Client struct {
 	parseResponse    ParseResponse
 	parseError       ParseResponse
 	middleware       *ClientMiddleware
+	redirectConfig   RedirectConfig
 	defaultHeaders   map[string]string
 	mutex            *sync.RWMutex
 }
@@ -61,10 +62,16 @@ func NewWithClientTimeout(entryPoint string, httpClient HTTPClient, timeout time
 		retryCount:       1,
 		retryWaitTime:    DefaultWaitTime,
 		retryMaxWaitTime: DefaultMaxWaitTime,
+		maxResponseSize:  0,
 		parseResponse:    DefaultParseResponse,
 		parseError:       DefaultParseError,
 		middleware:       NewClientMiddleware(),
-		mutex:            &sync.RWMutex{},
+		redirectConfig: RedirectConfig{
+			policy:       FollowRedirects,
+			maxRedirects: 0,
+		},
+		defaultHeaders: map[string]string{},
+		mutex:          &sync.RWMutex{},
 	}
 }
 
@@ -153,6 +160,20 @@ func (c *Client) UseMiddleware(middleware ...Middleware) {
 	c.middleware.Use(middleware...)
 }
 
+func (c *Client) SetRedirectPolicy(policy RedirectPolicy) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.redirectConfig.policy = policy
+}
+
+func (c *Client) SetMaxRedirects(maximum int) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.redirectConfig.maxRedirects = maximum
+}
+
 func (c *Client) Execute(request *Request) (*Response, error) {
 	return c.ExecuteWithContext(context.Background(), request)
 }
@@ -174,8 +195,9 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 	retryCount := c.retryCount
 	retryWaitTime := min(c.retryWaitTime, c.retryMaxWaitTime)
 	retryMaxWaitTime := c.retryMaxWaitTime
-	maxResponseBodySize := c.maxResponseSize
+	maxResponseSize := c.maxResponseSize
 	clientTimeout := c.timeout
+	redirectConfig := c.redirectConfig
 	defaultHeaders := make(map[string]string, len(c.defaultHeaders))
 	maps.Copy(defaultHeaders, c.defaultHeaders)
 	c.mutex.RUnlock()
@@ -193,13 +215,15 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 		defer cancel()
 	}
 
+	client := wrapWithRedirectPolicy(c.client, redirectConfig)
+
 	req, err := request.computeWithContext(ctx, entryPoint)
 	if err != nil {
 		return nil, err
 	}
 
 	for i := 0; i <= retryCount; i++ {
-		resp, err = c.client.Do(req)
+		resp, err = client.Do(req)
 		if err == nil {
 			break
 		}
@@ -220,8 +244,8 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 	defer resp.Body.Close()
 
 	var reader io.Reader = resp.Body
-	if maxResponseBodySize > 0 {
-		reader = io.LimitReader(resp.Body, maxResponseBodySize)
+	if maxResponseSize > 0 {
+		reader = io.LimitReader(resp.Body, maxResponseSize)
 	}
 
 	response.bodyBytes, err = io.ReadAll(reader)

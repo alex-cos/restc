@@ -19,6 +19,7 @@ RESTC is a lightweight Go library for executing HTTP requests with support for h
 - URL scheme validation (http/https only)
 - Multipart form data and file upload
 - Middleware chain for logging, tracing, metrics, etc.
+- Redirect policy control (follow, block, or limit)
 
 ## Installation
 
@@ -259,6 +260,19 @@ client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*re
 
 // Multiple middlewares execute in order (onion model)
 client.UseMiddleware(loggingMiddleware, tracingMiddleware, metricsMiddleware)
+```
+
+### Redirect policy
+
+```go
+// Block all redirects (stop at first 3xx)
+client.SetRedirectPolicy(restc.NoRedirect)
+
+// Follow redirects (default behavior)
+client.SetRedirectPolicy(restc.FollowRedirects)
+
+// Limit the number of sucessive redirects
+client.SetMaxRedirects(3)
 ```
 
 ## Response API
