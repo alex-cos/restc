@@ -148,31 +148,29 @@ func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Res
 	}
 
 	response := NewResponse(resp)
-	if resp == nil {
+	if resp.Body == nil {
 		return response, nil
 	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
+	defer resp.Body.Close()
 
-		response.bodyBytes, err = io.ReadAll(resp.Body)
+	response.bodyBytes, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return response, fmt.Errorf("failed to read body response: %w", err)
+	}
+	if response.IsError() && request.errorRespType != nil && c.parseError != nil {
+		response.content, err = c.parseError(request, response)
 		if err != nil {
-			return response, fmt.Errorf("failed to read body response: %w", err)
+			return response, err
 		}
-		if response.IsError() && request.errorRespType != nil && c.parseError != nil {
-			response.content, err = c.parseError(request, response)
-			if err != nil {
-				return response, err
-			}
-		}
-		if !response.IsError() && request.respType != nil && c.parseResponse != nil {
-			response.content, err = c.parseResponse(request, response)
-			if err != nil {
-				return response, err
-			}
+	}
+	if !response.IsError() && request.respType != nil && c.parseResponse != nil {
+		response.content, err = c.parseResponse(request, response)
+		if err != nil {
+			return response, err
 		}
 	}
 
-	return response, err
+	return response, nil
 }
 
 func (c *Client) context(ctx context.Context) (context.Context, context.CancelFunc) {
