@@ -1,5 +1,11 @@
 # RESTC - HTTP Client in Go
 
+[![Go Version](https://img.shields.io/badge/Go-1.25%2B-blue)](https://go.dev/)
+[![Test Status](https://github.com/alex-cos/restc/actions/workflows/test.yml/badge.svg)](https://github.com/alex-cos/restc/actions/workflows/test.yml)
+[![Lint Status](https://github.com/alex-cos/restc/actions/workflows/lint.yml/badge.svg)](https://github.com/alex-cos/restc/actions/workflows/lint.yml)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/alex-cos/restc)](https://goreportcard.com/report/github.com/alex-cos/restc)
+
 ## Description
 
 RESTC is a lightweight Go library for executing HTTP requests with support for headers, cookies, query parameters, and JSON serialization. It includes error handling, automatic retries, context support, and simplified response management.
