@@ -5,18 +5,24 @@ import (
 	"net/http"
 )
 
+// RedirectPolicy defines the behavior for handling HTTP redirects.
 type RedirectPolicy int
 
 const (
+	// FollowRedirects indicates that the client should follow redirects.
 	FollowRedirects RedirectPolicy = iota
+	// NoRedirect indicates that the client should not follow redirects.
 	NoRedirect
 )
 
+// RedirectConfig holds configuration for redirect handling.
 type RedirectConfig struct {
 	policy       RedirectPolicy
 	maxRedirects int
 }
 
+// checkRedirect determines whether to follow a redirect.
+// It is called by the HTTP client for each redirect.
 func (rc RedirectConfig) checkRedirect(_ *http.Request, via []*http.Request) error {
 	switch rc.policy {
 	case NoRedirect:

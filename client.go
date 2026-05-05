@@ -1,3 +1,15 @@
+// Package restc provides a simple and flexible HTTP client for making REST API requests.
+//
+// # Features
+//
+// - Fluent API for building requests with method chaining
+// - Automatic retry with exponential backoff
+// - Configurable redirect handling
+// - Middleware support for request/response interception
+// - Support for JSON, XML, and multipart form data
+// - IPv4/IPv6 transport options
+//
+
 package restc
 
 import (
@@ -14,17 +26,24 @@ import (
 )
 
 const (
-	DefaultTimeout     = 12 * time.Second
-	DefaultWaitTime    = time.Duration(100) * time.Millisecond
+	// DefaultTimeout is the default timeout for HTTP requests.
+	DefaultTimeout = 12 * time.Second
+	// DefaultWaitTime is the default wait time between retries.
+	DefaultWaitTime = time.Duration(100) * time.Millisecond
+	// DefaultMaxWaitTime is the maximum wait time between retries.
 	DefaultMaxWaitTime = time.Duration(2000) * time.Millisecond
 )
 
+// HTTPClient interface represents an HTTP client capable of executing requests.
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+// ParseResponse is a function that parses an HTTP response into a custom type.
 type ParseResponse func(request *Request, response *Response) (any, error)
 
+// Client is an HTTP client for making REST API requests.
+// It provides methods for configuring and executing HTTP requests.
 type Client struct {
 	entryPoint       string
 	client           HTTPClient
@@ -41,10 +60,15 @@ type Client struct {
 	mutex            *sync.RWMutex
 }
 
+// New creates a new Client with the given entry point URL and options.
+// The entry point is used as the base URL for relative paths in requests.
 func New(entryPoint string, opts ...Option) *Client {
 	return NewWithClient(entryPoint, http.DefaultClient, opts...)
 }
 
+// NewWithClient creates a new Client with the given entry point URL,
+// custom HTTP client, and options.
+// This allows using a custom http.Client configuration.
 func NewWithClient(entryPoint string, httpClient HTTPClient, opts ...Option) *Client {
 	client := &Client{
 		entryPoint:       entryPoint,
@@ -71,6 +95,7 @@ func NewWithClient(entryPoint string, httpClient HTTPClient, opts ...Option) *Cl
 	return client
 }
 
+// SetTimeout sets the timeout for HTTP requests.
 func (c *Client) SetTimeout(timeout time.Duration) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -78,6 +103,7 @@ func (c *Client) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }
 
+// SetEntryPoint sets the base URL for requests.
 func (c *Client) SetEntryPoint(entryPoint string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -85,6 +111,7 @@ func (c *Client) SetEntryPoint(entryPoint string) {
 	c.entryPoint = entryPoint
 }
 
+// SetRetryCount sets the number of retries on failure.
 func (c *Client) SetRetryCount(count int) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -92,6 +119,7 @@ func (c *Client) SetRetryCount(count int) {
 	c.retryCount = count
 }
 
+// SetRetryWaitTime sets the wait time between retries.
 func (c *Client) SetRetryWaitTime(wait time.Duration) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -99,6 +127,7 @@ func (c *Client) SetRetryWaitTime(wait time.Duration) {
 	c.retryWaitTime = wait
 }
 
+// SetRetryMaxWaitTime sets the maximum wait time between retries.
 func (c *Client) SetRetryMaxWaitTime(wait time.Duration) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -106,6 +135,7 @@ func (c *Client) SetRetryMaxWaitTime(wait time.Duration) {
 	c.retryMaxWaitTime = wait
 }
 
+// SetParseResponse sets the function to parse successful responses.
 func (c *Client) SetParseResponse(parseResponse ParseResponse) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -113,6 +143,7 @@ func (c *Client) SetParseResponse(parseResponse ParseResponse) {
 	c.parseResponse = parseResponse
 }
 
+// SetParseError sets the function to parse error responses.
 func (c *Client) SetParseError(parseError ParseResponse) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -120,6 +151,8 @@ func (c *Client) SetParseError(parseError ParseResponse) {
 	c.parseError = parseError
 }
 
+// SetMaxResponseSize sets the maximum response body size in bytes.
+// If the response body exceeds this size, it will be truncated.
 func (c *Client) SetMaxResponseSize(size int64) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -127,6 +160,7 @@ func (c *Client) SetMaxResponseSize(size int64) {
 	c.maxResponseSize = size
 }
 
+// SetHeader sets a default header to be sent with all requests.
 func (c *Client) SetHeader(header, value string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -137,6 +171,7 @@ func (c *Client) SetHeader(header, value string) {
 	c.defaultHeaders[header] = value
 }
 
+// SetHeaders sets multiple default headers to be sent with all requests.
 func (c *Client) SetHeaders(headers map[string]string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -149,6 +184,7 @@ func (c *Client) SetHeaders(headers map[string]string) {
 	}
 }
 
+// UseMiddleware adds middleware to be executed before each request.
 func (c *Client) UseMiddleware(middleware ...Middleware) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -156,6 +192,7 @@ func (c *Client) UseMiddleware(middleware ...Middleware) {
 	c.middleware.Use(middleware...)
 }
 
+// SetRedirectPolicy sets the redirect policy (FollowRedirects or NoRedirect).
 func (c *Client) SetRedirectPolicy(policy RedirectPolicy) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -163,6 +200,7 @@ func (c *Client) SetRedirectPolicy(policy RedirectPolicy) {
 	c.redirectConfig.policy = policy
 }
 
+// SetMaxRedirects sets the maximum number of redirects to follow.
 func (c *Client) SetMaxRedirects(maximum int) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -170,10 +208,13 @@ func (c *Client) SetMaxRedirects(maximum int) {
 	c.redirectConfig.maxRedirects = maximum
 }
 
+// Execute sends the HTTP request and returns the response.
+// It uses context.Background() for the request context.
 func (c *Client) Execute(request *Request) (*Response, error) {
 	return c.ExecuteWithContext(context.Background(), request)
 }
 
+// ExecuteWithContext sends the HTTP request with the given context and returns the response.
 func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Response, error) {
 	return c.middleware.Execute(request, func(req *Request) (*Response, error) {
 		return c.doExecuteWithContext(ctx, req)

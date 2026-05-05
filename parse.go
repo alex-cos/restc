@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// DefaultParseResponse is the default function for parsing successful responses.
+// It supports JSON and XML content types.
 func DefaultParseResponse(request *Request, response *Response) (any, error) {
 	var (
 		content any
@@ -35,6 +37,8 @@ func DefaultParseResponse(request *Request, response *Response) (any, error) {
 	return content, nil
 }
 
+// DefaultParseError is the default function for parsing error responses (4xx, 5xx).
+// It supports JSON, XML, and HTML content types.
 func DefaultParseError(request *Request, response *Response) (any, error) {
 	var (
 		content any

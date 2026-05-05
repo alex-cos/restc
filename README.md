@@ -26,6 +26,8 @@ RESTC is a lightweight Go library for executing HTTP requests with support for h
 - Multipart form data and file upload
 - Middleware chain for logging, tracing, metrics, etc.
 - Redirect policy control (follow, block, or limit)
+- Variadic options for flexible client configuration
+- IPv4/IPv6 transport control
 
 ## Installation
 
@@ -42,7 +44,9 @@ go get github.com/alex-cos/restc
 client := restc.New("https://api.example.com")
 
 // With custom timeout
-client := restc.NewWithTimeout("https://api.example.com", 5*time.Second)
+client := restc.New("https://api.example.com",
+    restc.WithTimeout(10 * time.Second),
+)
 
 // With custom http.Client (for TLS config, proxies, etc.)
 httpClient := &http.Client{
@@ -65,6 +69,43 @@ client.SetRetryWaitTime(100 * time.Millisecond)
 client.SetRetryMaxWaitTime(2 * time.Second)
 client.SetMaxResponseSize(10 * 1024 * 1024) // 10 MB limit
 ```
+
+### Client options
+
+You can pass options directly to `New` or `NewWithClient` for a more concise configuration:
+
+```go
+client := restc.New("https://api.example.com",
+    restc.WithTimeout(10 * time.Second),
+    restc.WithRetryCount(3),
+    restc.WithRetryWaitTime(100 * time.Millisecond),
+    restc.WithRetryMaxWaitTime(2 * time.Second),
+    restc.WithMaxResponseSize(10 * 1024 * 1024),
+    restc.WithHeader("User-Agent", "my-app/1.0"),
+    restc.WithHeaders(map[string]string{
+        "X-Custom-Header": "value",
+    }),
+    restc.WithDisableIPv6(),  // Force IPv4 only
+)
+```
+
+Available options:
+
+| Option | Description |
+| -------- | ------------- |
+| `WithTimeout(duration)` | Set request timeout |
+| `WithRetryCount(n)` | Set number of retry attempts |
+| `WithRetryWaitTime(duration)` | Set initial wait time between retries |
+| `WithRetryMaxWaitTime(duration)` | Set max wait time between retries |
+| `WithMaxResponseSize(bytes)` | Limit response body size (DoS protection) |
+| `WithParseResponse(fn)` | Custom response parser |
+| `WithParseError(fn)` | Custom error response parser |
+| `WithHeader(key, value)` | Set a default header |
+| `WithHeaders(map)` | Set multiple default headers |
+| `WithRedirectPolicy(policy)` | Set redirect behavior |
+| `WithMaxRedirects(n)` | Limit number of redirects |
+| `WithDisableIPv6()` | Force IPv4-only connections |
+| `WithOnlyIPv6()` | Force IPv6-only connections |
 
 ### Executing a GET request
 
@@ -342,7 +383,7 @@ restc.MethodTrace
 Retries use exponential backoff with configurable wait times:
 
 ```go
-client.SetRetryCount(3)              // 3 retry attempts (4 total)
+client.SetRetryCount(3)                          // 3 retry attempts (4 total)
 client.SetRetryWaitTime(100 * time.Millisecond)  // initial wait
 client.SetRetryMaxWaitTime(2 * time.Second)      // max wait between retries
 ```

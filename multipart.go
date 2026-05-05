@@ -10,18 +10,24 @@ import (
 	"path/filepath"
 )
 
+// FileUpload represents a file to be uploaded in a multipart request.
 type FileUpload struct {
 	FieldName string
 	FileName  string
 	Reader    io.Reader
 }
 
+// SetFormData sets form data fields for multipart form submission.
+// Returns the Request for method chaining.
 func (r *Request) SetFormData(data map[string]string) *Request {
 	r.ensureFormData()
 	maps.Copy(r.formData, data)
 	return r
 }
 
+// SetFileReader adds a file from an io.Reader to the multipart form.
+// fieldName is the form field name and fileName is the file name.
+// Returns the Request for method chaining.
 func (r *Request) SetFileReader(fieldName, fileName string, reader io.Reader) *Request {
 	r.files = append(r.files, &FileUpload{
 		FieldName: fieldName,
@@ -31,6 +37,9 @@ func (r *Request) SetFileReader(fieldName, fileName string, reader io.Reader) *R
 	return r
 }
 
+// SetFile adds a file from a file path to the multipart form.
+// fieldName is the form field name and filePath is the path to the file.
+// Returns the Request for method chaining.
 func (r *Request) SetFile(fieldName, filePath string) *Request {
 	file, err := os.Open(filePath)
 	if err != nil {

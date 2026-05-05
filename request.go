@@ -24,6 +24,8 @@ var validMethodsMap = map[string]bool{
 	http.MethodTrace:   true,
 }
 
+// Request represents an HTTP request with method, URL, headers, body, and other options.
+// It uses a fluent API with method chaining for configuration.
 type Request struct {
 	url            string
 	method         string
@@ -43,6 +45,7 @@ type Request struct {
 	errorRespType  any
 }
 
+// NewRequest creates a new Request with the given HTTP method and URL.
 func NewRequest(method, url string) *Request {
 	return &Request{
 		url:           url,
@@ -59,38 +62,47 @@ func NewRequest(method, url string) *Request {
 	}
 }
 
+// Get creates a new GET request for the given URL.
 func Get(url string) *Request {
 	return NewRequest(MethodGet, url)
 }
 
+// Head creates a new HEAD request for the given URL.
 func Head(url string) *Request {
 	return NewRequest(MethodHead, url)
 }
 
+// Post creates a new POST request for the given URL.
 func Post(url string) *Request {
 	return NewRequest(MethodPost, url)
 }
 
+// Put creates a new PUT request for the given URL.
 func Put(url string) *Request {
 	return NewRequest(MethodPut, url)
 }
 
+// Patch creates a new PATCH request for the given URL.
 func Patch(url string) *Request {
 	return NewRequest(MethodPatch, url)
 }
 
+// Delete creates a new DELETE request for the given URL.
 func Delete(url string) *Request {
 	return NewRequest(MethodDelete, url)
 }
 
+// Options creates a new OPTIONS request for the given URL.
 func Options(url string) *Request {
 	return NewRequest(MethodOptions, url)
 }
 
+// Trace creates a new TRACE request for the given URL.
 func Trace(url string) *Request {
 	return NewRequest(MethodTrace, url)
 }
 
+// String returns a string representation of the request.
 func (r *Request) String() string {
 	params := r.queryParams.Encode()
 	str := fmt.Sprintf("[%s] /%s", r.method, strings.TrimLeft(r.url, "/"))
@@ -101,14 +113,17 @@ func (r *Request) String() string {
 	return str
 }
 
+// Method returns the HTTP method of the request.
 func (r *Request) Method() string {
 	return r.method
 }
 
+// URL returns the URL of the request.
 func (r *Request) URL() string {
 	return r.url
 }
 
+// Clone creates a deep copy of the request.
 func (r *Request) Clone() *Request {
 	clone := &Request{
 		url:           r.url,
@@ -158,21 +173,29 @@ func (r *Request) Clone() *Request {
 	return clone
 }
 
+// SetURL sets the URL of the request.
+// Returns the Request for method chaining.
 func (r *Request) SetURL(url string) *Request {
 	r.url = url
 	return r
 }
 
+// SetMethod sets the HTTP method of the request.
+// Returns the Request for method chaining.
 func (r *Request) SetMethod(m string) *Request {
 	r.method = m
 	return r
 }
 
+// SetContentType sets the Content-Type header of the request.
+// Returns the Request for method chaining.
 func (r *Request) SetContentType(ct string) *Request {
 	r.SetHeader(http.CanonicalHeaderKey(ContentType), ct)
 	return r
 }
 
+// SetHeader sets a header for the request.
+// Returns the Request for method chaining.
 func (r *Request) SetHeader(header, value string) *Request {
 	if r.header == nil {
 		r.header = make(map[string]string)
@@ -181,6 +204,8 @@ func (r *Request) SetHeader(header, value string) *Request {
 	return r
 }
 
+// SetHeaders sets multiple headers for the request.
+// Returns the Request for method chaining.
 func (r *Request) SetHeaders(headers map[string]string) *Request {
 	if r.header == nil {
 		r.header = make(map[string]string)
@@ -191,28 +216,39 @@ func (r *Request) SetHeaders(headers map[string]string) *Request {
 	return r
 }
 
+// SetCookie adds a cookie to the request.
+// Returns the Request for method chaining.
 func (r *Request) SetCookie(hc *http.Cookie) *Request {
 	r.cookies = append(r.cookies, hc)
 	return r
 }
 
+// SetCookies adds multiple cookies to the request.
+// Returns the Request for method chaining.
 func (r *Request) SetCookies(rs []*http.Cookie) *Request {
 	r.cookies = append(r.cookies, rs...)
 	return r
 }
 
+// AddQueryParam adds a query parameter to the request URL.
+// Multiple values can be added for the same parameter.
+// Returns the Request for method chaining.
 func (r *Request) AddQueryParam(param, value string) *Request {
 	r.ensureQueryParams()
 	r.queryParams.Add(param, value)
 	return r
 }
 
+// SetQueryParam sets a query parameter, replacing any existing value.
+// Returns the Request for method chaining.
 func (r *Request) SetQueryParam(param, value string) *Request {
 	r.ensureQueryParams()
 	r.queryParams.Set(param, value)
 	return r
 }
 
+// SetQueryParams sets multiple query parameters.
+// Returns the Request for method chaining.
 func (r *Request) SetQueryParams(params map[string]string) *Request {
 	for p, v := range params {
 		r.SetQueryParam(p, v)
@@ -220,6 +256,8 @@ func (r *Request) SetQueryParams(params map[string]string) *Request {
 	return r
 }
 
+// SetQueryParamsFromValues sets query parameters from url.Values.
+// Returns the Request for method chaining.
 func (r *Request) SetQueryParamsFromValues(params _url.Values) *Request {
 	r.ensureQueryParams()
 	for p, v := range params {
@@ -230,45 +268,62 @@ func (r *Request) SetQueryParamsFromValues(params _url.Values) *Request {
 	return r
 }
 
+// SetBody sets the request body. Supports string, []byte, io.Reader, or any value that can beJSON marshaled.
+// Returns the Request for method chaining.
 func (r *Request) SetBody(body any) *Request {
 	r.body = body
 	return r
 }
 
+// SetFormURLEncoded sets the body as URL-encoded form data.
+// Returns the Request for method chaining.
 func (r *Request) SetFormURLEncoded(data map[string]string) *Request {
 	r.formURLEncoded = data
 	return r
 }
 
+// SetAuthToken sets the authentication token for the request.
+// The token will be sent in the Authorization header using the specified auth scheme.
+// Returns the Request for method chaining.
 func (r *Request) SetAuthToken(authToken string) *Request {
 	r.authToken = authToken
 	return r
 }
 
+// SetAuthScheme sets the authentication scheme (e.g., "Bearer", "Basic").
+// Returns the Request for method chaining.
 func (r *Request) SetAuthScheme(scheme string) *Request {
 	r.authScheme = scheme
 	return r
 }
 
+// SetTimeout sets a timeout for this specific request.
+// Returns the Request for method chaining.
 func (r *Request) SetTimeout(timeout time.Duration) *Request {
 	r.timeout = timeout
 	return r
 }
 
+// SetResponseType sets the type to unmarshal successful responses into.
+// Returns the Request for method chaining.
 func (r *Request) SetResponseType(responseType any) *Request {
 	r.respType = responseType
 	return r
 }
 
+// SetErrorRespType sets the type to unmarshal error responses into.
+// Returns the Request for method chaining.
 func (r *Request) SetErrorRespType(responseType any) *Request {
 	r.errorRespType = responseType
 	return r
 }
 
+// GetResponseType returns the type for unmarshaling successful responses.
 func (r *Request) GetResponseType() any {
 	return r.respType
 }
 
+// GetErrorRespType returns the type for unmarshaling error responses.
 func (r *Request) GetErrorRespType() any {
 	return r.errorRespType
 }
