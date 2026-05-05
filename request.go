@@ -305,7 +305,8 @@ func (r *Request) computeWithContext(
 		return nil, r.multipartErr
 	}
 
-	if len(r.formURLEncoded) > 0 {
+	switch {
+	case len(r.formURLEncoded) > 0:
 		data := _url.Values{}
 		for k, v := range r.formURLEncoded {
 			data.Set(k, v)
@@ -316,7 +317,7 @@ func (r *Request) computeWithContext(
 			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
 		req.Header.Set(ContentType, TypeApplicationFormURLEncoded)
-	} else if len(r.formData) > 0 || len(r.files) > 0 {
+	case len(r.formData) > 0 || len(r.files) > 0:
 		reader, contentType, err := r.buildMultipartBody()
 		if err != nil {
 			return nil, err
@@ -326,7 +327,7 @@ func (r *Request) computeWithContext(
 			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
 		req.Header.Set(ContentType, contentType)
-	} else if r.body != nil {
+	case r.body != nil:
 		reader, err = r.toReader()
 		if err != nil {
 			return nil, err
@@ -335,12 +336,13 @@ func (r *Request) computeWithContext(
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
-	} else {
+	default:
 		req, err = http.NewRequestWithContext(ctx, r.method, url.String(), nil)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrBuildRequest, err)
 		}
 	}
+
 	req.URL.RawQuery = r.queryParams.Encode()
 
 	r.applyHeaders(req, defaultHeaders)

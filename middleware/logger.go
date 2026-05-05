@@ -36,12 +36,13 @@ func (l *MiddlewareLogger) Handler() restc.Middleware {
 			slog.Duration("duration", time.Since(start)),
 		}
 
-		if err != nil {
+		switch {
+		case err != nil:
 			attrs = append(attrs, slog.String("error", err.Error()))
 			l.logger.Error("HTTP request failed", attrs...)
-		} else if resp.IsError() {
+		case resp.IsError():
 			l.logger.Warn("HTTP error response", attrs...)
-		} else {
+		default:
 			l.logger.Info("HTTP request completed", attrs...)
 		}
 

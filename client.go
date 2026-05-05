@@ -41,23 +41,15 @@ type Client struct {
 	mutex            *sync.RWMutex
 }
 
-func New(entryPoint string) *Client {
-	return NewWithClient(entryPoint, http.DefaultClient)
+func New(entryPoint string, opts ...Option) *Client {
+	return NewWithClient(entryPoint, http.DefaultClient, opts...)
 }
 
-func NewWithClient(entryPoint string, client HTTPClient) *Client {
-	return NewWithClientTimeout(entryPoint, client, DefaultTimeout)
-}
-
-func NewWithTimeout(entryPoint string, timeout time.Duration) *Client {
-	return NewWithClientTimeout(entryPoint, http.DefaultClient, timeout)
-}
-
-func NewWithClientTimeout(entryPoint string, httpClient HTTPClient, timeout time.Duration) *Client {
-	return &Client{
+func NewWithClient(entryPoint string, httpClient HTTPClient, opts ...Option) *Client {
+	client := &Client{
 		entryPoint:       entryPoint,
 		client:           httpClient,
-		timeout:          timeout,
+		timeout:          DefaultTimeout,
 		retryCount:       1,
 		retryWaitTime:    DefaultWaitTime,
 		retryMaxWaitTime: DefaultMaxWaitTime,
@@ -72,6 +64,11 @@ func NewWithClientTimeout(entryPoint string, httpClient HTTPClient, timeout time
 		defaultHeaders: map[string]string{},
 		mutex:          &sync.RWMutex{},
 	}
+	for _, opt := range opts {
+		opt(client)
+	}
+
+	return client
 }
 
 func (c *Client) SetTimeout(timeout time.Duration) {

@@ -38,7 +38,16 @@ func TestGetSucess(t *testing.T) {
 	t.Parallel()
 
 	client := restc.NewWithClient("https://api.test.com",
-		NewMockClient(http.StatusOK, GetResponse))
+		NewMockClient(http.StatusOK, GetResponse),
+		restc.WithTimeout(5*time.Second),
+		restc.WithRetryCount(3),
+		restc.WithRetryWaitTime(200*time.Millisecond),
+		restc.WithRetryMaxWaitTime(2*time.Second),
+		restc.WithMaxResponseSize(10*1024*1024),
+		restc.WithRedirectPolicy(restc.NoRedirect),
+		restc.WithHeader("User-Agent", "MyAgent/1.0"),
+		restc.WithDisableIPv6(),
+	)
 
 	req := restc.NewRequest("", "users").
 		SetMethod(restc.MethodGet).
@@ -68,7 +77,16 @@ func TestGetWithURL(t *testing.T) {
 	t.Parallel()
 
 	client := restc.NewWithClient("https://api.test.com",
-		NewMockClient(http.StatusOK, GetResponse))
+		NewMockClient(http.StatusOK, GetResponse),
+		restc.WithTimeout(5*time.Second),
+		restc.WithRetryCount(3),
+		restc.WithRetryWaitTime(200*time.Millisecond),
+		restc.WithRetryMaxWaitTime(2*time.Second),
+		restc.WithMaxResponseSize(10*1024*1024),
+		restc.WithRedirectPolicy(restc.NoRedirect),
+		restc.WithHeaders(map[string]string{"User-Agent": "MyAgent/1.0"}),
+		restc.WithOnlyIPv6(),
+	)
 
 	req := restc.Get("users").
 		SetMethod(restc.MethodGet).
@@ -305,13 +323,13 @@ func TestPostSucess(t *testing.T) {
 func TestUpdateSucess(t *testing.T) {
 	t.Parallel()
 
-	client := restc.NewWithClientTimeout("https://api.test.com",
+	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, `{
 			"id": 3,
 			"firstname": "Paul",
 			"lastname": "Klein"
 		}`),
-		5*time.Second)
+		restc.WithTimeout(5*time.Second))
 
 	req := restc.Put("users/3").
 		SetHeader("Accept", restc.TypeApplicationJSON).
@@ -343,13 +361,13 @@ func TestUpdateSucess(t *testing.T) {
 func TestPatchSucess(t *testing.T) {
 	t.Parallel()
 
-	client := restc.NewWithClientTimeout("https://api.test.com",
+	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, `{
 			"id": 3,
 			"firstname": "Paul",
 			"lastname": "Klein"
 		}`),
-		5*time.Second)
+		restc.WithTimeout(5*time.Second))
 
 	req := restc.Patch("users/3").
 		SetHeader("Accept", restc.TypeApplicationJSON).
@@ -378,11 +396,11 @@ func TestPatchSucess(t *testing.T) {
 func TestDeleteSucess(t *testing.T) {
 	t.Parallel()
 
-	client := restc.NewWithClientTimeout("https://api.test.com",
+	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, `{
 			"message": "User with id = 3 has been successfully deleted."
 		}`),
-		5*time.Second)
+		restc.WithTimeout(5*time.Second))
 
 	req := restc.Delete("users/3").
 		SetHeader("Accept", restc.TypeApplicationJSON)
