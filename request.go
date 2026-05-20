@@ -124,6 +124,9 @@ func (r *Request) URL() string {
 }
 
 // Clone creates a deep copy of the request.
+// Note: FileUpload Readers are shared between the original and the clone
+// because io.Reader cannot be duplicated.
+// Consuming the reader on one request will affect the other.
 func (r *Request) Clone() *Request {
 	clone := &Request{
 		url:           r.url,
@@ -167,7 +170,13 @@ func (r *Request) Clone() *Request {
 
 	if r.files != nil {
 		clone.files = make([]*FileUpload, len(r.files))
-		copy(clone.files, r.files)
+		for i, f := range r.files {
+			clone.files[i] = &FileUpload{
+				FieldName: f.FieldName,
+				FileName:  f.FileName,
+				Reader:    f.Reader,
+			}
+		}
 	}
 
 	return clone
@@ -268,7 +277,8 @@ func (r *Request) SetQueryParamsFromValues(params _url.Values) *Request {
 	return r
 }
 
-// SetBody sets the request body. Supports string, []byte, io.Reader, or any value that can beJSON marshaled.
+// SetBody sets the request body. Supports string, []byte, io.Reader,
+// or any value that can be JSON marshaled.
 // Returns the Request for method chaining.
 func (r *Request) SetBody(body any) *Request {
 	r.body = body
@@ -316,6 +326,11 @@ func (r *Request) SetResponseType(responseType any) *Request {
 func (r *Request) SetErrorRespType(responseType any) *Request {
 	r.errorRespType = responseType
 	return r
+}
+
+// GetCreatedAt returns the date and time of the creation.
+func (r *Request) GetCreatedAt() time.Time {
+	return r.createdAt
 }
 
 // GetResponseType returns the type for unmarshaling successful responses.

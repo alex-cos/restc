@@ -46,7 +46,6 @@ func TestGetSucess(t *testing.T) {
 		restc.WithMaxResponseSize(10*1024*1024),
 		restc.WithRedirectPolicy(restc.NoRedirect),
 		restc.WithHeader("User-Agent", "MyAgent/1.0"),
-		restc.WithDisableIPv6(),
 	)
 
 	req := restc.NewRequest("", "users").
@@ -85,7 +84,6 @@ func TestGetWithURL(t *testing.T) {
 		restc.WithMaxResponseSize(10*1024*1024),
 		restc.WithRedirectPolicy(restc.NoRedirect),
 		restc.WithHeaders(map[string]string{"User-Agent": "MyAgent/1.0"}),
-		restc.WithOnlyIPv6(),
 	)
 
 	req := restc.Get("users").

@@ -1,7 +1,11 @@
 package restc
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"net/http"
+	"net/url"
+	"os"
 	"time"
 )
 
@@ -101,15 +105,20 @@ func WithMaxResponseSize(size int64) Option {
 	}
 }
 
-// WithDisableIPv6 configures the client to use only IPv4.
-func WithDisableIPv6() Option {
+// WithOnlyIPv4 configures the client to use only IPv4.
+func WithOnlyIPv4() Option {
 	return func(c *Client) {
 		if c.client == nil {
 			return
 		}
 		httpClient, ok := c.client.(*http.Client)
 		if ok {
-			httpClient.Transport = NewIpv4Transport()
+			// nolint: forcetypeassert
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			if t, ok := httpClient.Transport.(*http.Transport); ok {
+				transport = t
+			}
+			httpClient.Transport = NewIpv4Transport(transport)
 		}
 	}
 }
@@ -122,7 +131,134 @@ func WithOnlyIPv6() Option {
 		}
 		httpClient, ok := c.client.(*http.Client)
 		if ok {
-			httpClient.Transport = NewIpv6Transport()
+			// nolint: forcetypeassert
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			if t, ok := httpClient.Transport.(*http.Transport); ok {
+				transport = t
+			}
+			httpClient.Transport = NewIpv6Transport(transport)
 		}
+	}
+}
+
+// WithTLSConfig accepts a complete TLS configuration
+// with preserving the actual transport layer.
+func WithTLSConfig(config *tls.Config) Option {
+	return func(c *Client) {
+		if c.client == nil {
+			return
+		}
+		if httpClient, ok := c.client.(*http.Client); ok {
+			// nolint: forcetypeassert
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			if t, ok := httpClient.Transport.(*http.Transport); ok {
+				transport = t
+			}
+			transport.TLSClientConfig = config
+			httpClient.Transport = transport
+		}
+	}
+}
+
+// WithMTLS configures the mutual TLS authentication
+// with preserving the actual transport layer.
+func WithMTLS(caCertFile, certFile, keyFile string) Option {
+	return func(c *Client) {
+		if c.client == nil {
+			return
+		}
+		httpClient, ok := c.client.(*http.Client)
+		if !ok {
+			return
+		}
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			return
+		}
+		caCertPEM, err := os.ReadFile(caCertFile)
+		if err != nil {
+			return
+		}
+		caPool := x509.NewCertPool()
+		if !caPool.AppendCertsFromPEM(caCertPEM) {
+			return
+		}
+		// nolint: forcetypeassert
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		if t, ok := httpClient.Transport.(*http.Transport); ok {
+			transport = t
+		}
+		transport.TLSClientConfig = &tls.Config{
+			RootCAs:      caPool,
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS12,
+		}
+		httpClient.Transport = transport
+	}
+}
+
+// WithProxy configures the client to use the specified HTTP proxy.
+// If user and password are provided, basic auth is added to the proxy URL.
+func WithProxy(proxyURL, user, password string) Option {
+	return func(c *Client) {
+		if c.client == nil {
+			return
+		}
+		httpClient, ok := c.client.(*http.Client)
+		if !ok {
+			return
+		}
+
+		parsed, err := url.Parse(proxyURL)
+		if err != nil {
+			return
+		}
+
+		if user != "" && password != "" {
+			parsed.User = url.UserPassword(user, password)
+		} else if user != "" {
+			parsed.User = url.User(user)
+		}
+		// nolint: forcetypeassert
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		if t, ok := httpClient.Transport.(*http.Transport); ok {
+			transport = t
+		}
+		transport.Proxy = http.ProxyURL(parsed)
+		httpClient.Transport = transport
+	}
+}
+
+// WithTransportPool configures the HTTP transport connection pool settings.
+// maxIdleConnsPerHost: max idle connections per host (default: 2)
+// maxIdleConns: total max idle connections (default: 100)
+// maxConnsPerHost: max connections per host, 0 = unlimited
+// idleConnTimeout: how long idle connections stay in the pool.
+func WithTransportPool(
+	maxIdleConnsPerHost int,
+	maxIdleConns int,
+	maxConnsPerHost int,
+	idleConnTimeout time.Duration,
+) Option {
+	return func(c *Client) {
+		if c.client == nil {
+			return
+		}
+		httpClient, ok := c.client.(*http.Client)
+		if !ok {
+			return
+		}
+		// nolint: forcetypeassert
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		if t, ok := httpClient.Transport.(*http.Transport); ok {
+			transport = t
+		}
+
+		transport.MaxIdleConnsPerHost = maxIdleConnsPerHost
+		transport.MaxIdleConns = maxIdleConns
+		transport.MaxConnsPerHost = maxConnsPerHost
+		transport.IdleConnTimeout = idleConnTimeout
+
+		httpClient.Transport = transport
 	}
 }
