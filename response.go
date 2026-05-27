@@ -10,7 +10,6 @@ import (
 // It wraps the standard library http.Response and provides additional functionality.
 type Response struct {
 	rawResponse *http.Response
-	isRead      bool
 	bodyBytes   []byte
 	receivedAt  time.Time
 	content     any
@@ -20,7 +19,6 @@ type Response struct {
 func NewResponse(rawResponse *http.Response) *Response {
 	return &Response{
 		rawResponse: rawResponse,
-		isRead:      false,
 		bodyBytes:   nil,
 		receivedAt:  time.Now().UTC(),
 		content:     nil,

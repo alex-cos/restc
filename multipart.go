@@ -46,15 +46,21 @@ func (r *Request) SetFile(fieldName, filePath string) *Request {
 		r.multipartErr = err
 		return r
 	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		r.multipartErr = err
+		return r
+	}
 
 	r.files = append(r.files, &FileUpload{
 		FieldName: fieldName,
 		FileName:  filepath.Base(filePath),
-		Reader:    file,
+		Reader:    bytes.NewReader(data),
 	})
 	return r
 }
-
 func (r *Request) ensureFormData() {
 	if r.formData == nil {
 		r.formData = make(map[string]string)

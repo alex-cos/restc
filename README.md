@@ -85,7 +85,7 @@ client := restc.New("https://api.example.com",
     restc.WithHeaders(map[string]string{
         "X-Custom-Header": "value",
     }),
-    restc.WithDisableIPv6(),  // Force IPv4 only
+    restc.WithOnlyIPv4(),  // Force IPv4 only
 )
 ```
 
@@ -104,7 +104,7 @@ Available options:
 | `WithHeaders(map)` | Set multiple default headers |
 | `WithRedirectPolicy(policy)` | Set redirect behavior |
 | `WithMaxRedirects(n)` | Limit number of redirects |
-| `WithDisableIPv6()` | Force IPv4-only connections |
+| `WithOnlyIPv4()` | Force IPv4-only connections |
 | `WithOnlyIPv6()` | Force IPv6-only connections |
 
 ### Executing a GET request
@@ -307,6 +307,49 @@ client.UseMiddleware(func(req *restc.Request, next func(req *restc.Request) (*re
 
 // Multiple middlewares execute in order (onion model)
 client.UseMiddleware(loggingMiddleware, tracingMiddleware, metricsMiddleware)
+```
+
+#### Recovery middleware
+
+The recovery middleware catches panics from downstream middlewares
+and the request execution, preventing the process from crashing.
+
+```go
+// Recovery must be registered FIRST to protect the entire chain
+client.UseMiddleware(recovery.Handler())
+client.UseMiddleware(loggingMiddleware)
+client.UseMiddleware(metricsMiddleware)
+
+// With custom logger
+logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+client.UseMiddleware(recovery.NewRecoveryMiddlewareWith(logger).Handler())
+```
+
+When a panic is caught, the middleware logs the error with stack trace
+and returns a `"panic recovered: ..."` error.
+
+#### Prometheus metrics middleware
+
+The prometheus middleware collects request metrics and exposes them for
+Prometheus scraping. Three metrics are recorded:
+
+- `<prefix>_requests_total` — counter with `method` and `status_code` labels
+- `<prefix>_request_duration_seconds` — histogram with `method` and `status_code` labels
+- `<prefix>_requests_in_flight` — gauge of currently executing requests
+
+The default prefix is `"restc"`. Use an empty string `""` to keep the default.
+
+```go
+import "github.com/alex-cos/restc/middleware"
+
+// Automatic registration with the default prometheus registry
+metrics := middleware.NewPrometheusMetrics("")
+client.UseMiddleware(metrics.Handler())
+
+// With a custom registry (useful in tests)
+reg := prometheus.NewRegistry()
+metrics := middleware.NewPrometheusMetricsWith("myapp", reg)
+client.UseMiddleware(metrics.Handler())
 ```
 
 ### Redirect policy

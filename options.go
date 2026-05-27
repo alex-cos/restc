@@ -84,6 +84,16 @@ func WithHeaders(headers map[string]string) Option {
 	}
 }
 
+// WithContentType sets the default Content-Type header for all requests.
+func WithContentType(contentType string) Option {
+	return func(c *Client) {
+		if c.defaultHeaders == nil {
+			c.defaultHeaders = make(map[string]string)
+		}
+		c.defaultHeaders[ContentType] = contentType
+	}
+}
+
 // WithRedirectPolicy sets the redirect policy.
 func WithRedirectPolicy(policy RedirectPolicy) Option {
 	return func(c *Client) {
@@ -108,36 +118,22 @@ func WithMaxResponseSize(size int64) Option {
 // WithOnlyIPv4 configures the client to use only IPv4.
 func WithOnlyIPv4() Option {
 	return func(c *Client) {
-		if c.client == nil {
+		transport, httpClient, ok := cloneClientTransport(c)
+		if !ok {
 			return
 		}
-		httpClient, ok := c.client.(*http.Client)
-		if ok {
-			// nolint: forcetypeassert
-			transport := http.DefaultTransport.(*http.Transport).Clone()
-			if t, ok := httpClient.Transport.(*http.Transport); ok {
-				transport = t
-			}
-			httpClient.Transport = NewIpv4Transport(transport)
-		}
+		httpClient.Transport = NewIpv4Transport(transport)
 	}
 }
 
 // WithOnlyIPv6 configures the client to use only IPv6.
 func WithOnlyIPv6() Option {
 	return func(c *Client) {
-		if c.client == nil {
+		transport, httpClient, ok := cloneClientTransport(c)
+		if !ok {
 			return
 		}
-		httpClient, ok := c.client.(*http.Client)
-		if ok {
-			// nolint: forcetypeassert
-			transport := http.DefaultTransport.(*http.Transport).Clone()
-			if t, ok := httpClient.Transport.(*http.Transport); ok {
-				transport = t
-			}
-			httpClient.Transport = NewIpv6Transport(transport)
-		}
+		httpClient.Transport = NewIpv6Transport(transport)
 	}
 }
 
@@ -145,18 +141,12 @@ func WithOnlyIPv6() Option {
 // with preserving the actual transport layer.
 func WithTLSConfig(config *tls.Config) Option {
 	return func(c *Client) {
-		if c.client == nil {
+		transport, httpClient, ok := cloneClientTransport(c)
+		if !ok {
 			return
 		}
-		if httpClient, ok := c.client.(*http.Client); ok {
-			// nolint: forcetypeassert
-			transport := http.DefaultTransport.(*http.Transport).Clone()
-			if t, ok := httpClient.Transport.(*http.Transport); ok {
-				transport = t
-			}
-			transport.TLSClientConfig = config
-			httpClient.Transport = transport
-		}
+		transport.TLSClientConfig = config
+		httpClient.Transport = transport
 	}
 }
 
@@ -164,10 +154,7 @@ func WithTLSConfig(config *tls.Config) Option {
 // with preserving the actual transport layer.
 func WithMTLS(caCertFile, certFile, keyFile string) Option {
 	return func(c *Client) {
-		if c.client == nil {
-			return
-		}
-		httpClient, ok := c.client.(*http.Client)
+		transport, httpClient, ok := cloneClientTransport(c)
 		if !ok {
 			return
 		}
@@ -183,11 +170,6 @@ func WithMTLS(caCertFile, certFile, keyFile string) Option {
 		if !caPool.AppendCertsFromPEM(caCertPEM) {
 			return
 		}
-		// nolint: forcetypeassert
-		transport := http.DefaultTransport.(*http.Transport).Clone()
-		if t, ok := httpClient.Transport.(*http.Transport); ok {
-			transport = t
-		}
 		transport.TLSClientConfig = &tls.Config{
 			RootCAs:      caPool,
 			Certificates: []tls.Certificate{cert},
@@ -201,10 +183,7 @@ func WithMTLS(caCertFile, certFile, keyFile string) Option {
 // If user and password are provided, basic auth is added to the proxy URL.
 func WithProxy(proxyURL, user, password string) Option {
 	return func(c *Client) {
-		if c.client == nil {
-			return
-		}
-		httpClient, ok := c.client.(*http.Client)
+		transport, httpClient, ok := cloneClientTransport(c)
 		if !ok {
 			return
 		}
@@ -218,11 +197,6 @@ func WithProxy(proxyURL, user, password string) Option {
 			parsed.User = url.UserPassword(user, password)
 		} else if user != "" {
 			parsed.User = url.User(user)
-		}
-		// nolint: forcetypeassert
-		transport := http.DefaultTransport.(*http.Transport).Clone()
-		if t, ok := httpClient.Transport.(*http.Transport); ok {
-			transport = t
 		}
 		transport.Proxy = http.ProxyURL(parsed)
 		httpClient.Transport = transport
@@ -241,17 +215,9 @@ func WithTransportPool(
 	idleConnTimeout time.Duration,
 ) Option {
 	return func(c *Client) {
-		if c.client == nil {
-			return
-		}
-		httpClient, ok := c.client.(*http.Client)
+		transport, httpClient, ok := cloneClientTransport(c)
 		if !ok {
 			return
-		}
-		// nolint: forcetypeassert
-		transport := http.DefaultTransport.(*http.Transport).Clone()
-		if t, ok := httpClient.Transport.(*http.Transport); ok {
-			transport = t
 		}
 
 		transport.MaxIdleConnsPerHost = maxIdleConnsPerHost
@@ -261,4 +227,20 @@ func WithTransportPool(
 
 		httpClient.Transport = transport
 	}
+}
+
+func cloneClientTransport(c *Client) (*http.Transport, *http.Client, bool) {
+	if c.client == nil {
+		return nil, nil, false
+	}
+	httpClient, ok := c.client.(*http.Client)
+	if !ok {
+		return nil, nil, false
+	}
+	// nolint: forcetypeassert
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if t, ok := httpClient.Transport.(*http.Transport); ok {
+		transport = t
+	}
+	return transport, httpClient, true
 }

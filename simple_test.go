@@ -45,6 +45,7 @@ func TestGetSucess(t *testing.T) {
 		restc.WithRetryMaxWaitTime(2*time.Second),
 		restc.WithMaxResponseSize(10*1024*1024),
 		restc.WithRedirectPolicy(restc.NoRedirect),
+		restc.WithContentType(restc.TypeApplicationJSON),
 		restc.WithHeader("User-Agent", "MyAgent/1.0"),
 	)
 
@@ -83,6 +84,7 @@ func TestGetWithURL(t *testing.T) {
 		restc.WithRetryMaxWaitTime(2*time.Second),
 		restc.WithMaxResponseSize(10*1024*1024),
 		restc.WithRedirectPolicy(restc.NoRedirect),
+		restc.WithContentType(restc.TypeApplicationJSON),
 		restc.WithHeaders(map[string]string{"User-Agent": "MyAgent/1.0"}),
 	)
 

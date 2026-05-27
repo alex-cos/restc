@@ -32,6 +32,8 @@ const (
 	DefaultWaitTime = time.Duration(100) * time.Millisecond
 	// DefaultMaxWaitTime is the maximum wait time between retries.
 	DefaultMaxWaitTime = time.Duration(2000) * time.Millisecond
+	// DefaultUserAgent is the default "User-Agent" value.
+	DefaultUserAgent = "restc/1.0"
 )
 
 // HTTPClient interface represents an HTTP client capable of executing requests.
@@ -70,6 +72,10 @@ func New(entryPoint string, opts ...Option) *Client {
 // custom HTTP client, and options.
 // This allows using a custom http.Client configuration.
 func NewWithClient(entryPoint string, httpClient HTTPClient, opts ...Option) *Client {
+	c, ok := httpClient.(*http.Client)
+	if ok {
+		c.Timeout = DefaultTimeout
+	}
 	client := &Client{
 		entryPoint:       entryPoint,
 		client:           httpClient,
@@ -85,8 +91,10 @@ func NewWithClient(entryPoint string, httpClient HTTPClient, opts ...Option) *Cl
 			policy:       FollowRedirects,
 			maxRedirects: 0,
 		},
-		defaultHeaders: map[string]string{},
-		mutex:          &sync.RWMutex{},
+		defaultHeaders: map[string]string{
+			UserAgent: DefaultUserAgent,
+		},
+		mutex: &sync.RWMutex{},
 	}
 	for _, opt := range opts {
 		opt(client)
@@ -184,6 +192,11 @@ func (c *Client) SetHeaders(headers map[string]string) {
 	}
 }
 
+// SetContentType sets the default Content-Type header for all requests.
+func (c *Client) SetContentType(contentType string) {
+	c.SetHeader(ContentType, contentType)
+}
+
 // UseMiddleware adds middleware to be executed before each request.
 func (c *Client) UseMiddleware(middleware ...Middleware) {
 	c.mutex.Lock()
@@ -208,6 +221,17 @@ func (c *Client) SetMaxRedirects(maximum int) {
 	c.redirectConfig.maxRedirects = maximum
 }
 
+// SetTransport sets the transport layer for the client.
+func (c *Client) SetTransport(transport *http.Transport) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	httpClient, ok := c.client.(*http.Client)
+	if ok {
+		httpClient.Transport = transport
+	}
+}
+
 // Execute sends the HTTP request and returns the response.
 // It uses context.Background() for the request context.
 func (c *Client) Execute(request *Request) (*Response, error) {
@@ -223,6 +247,7 @@ func (c *Client) ExecuteWithContext(ctx context.Context, request *Request) (*Res
 
 func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*Response, error) {
 	var (
+		req  *http.Request
 		resp *http.Response
 		err  error
 	)
@@ -248,12 +273,12 @@ func (c *Client) doExecuteWithContext(ctx context.Context, request *Request) (*R
 
 	client := wrapWithRedirectPolicy(c.client, redirectConfig)
 
-	req, err := request.computeWithContext(ctx, entryPoint, c.defaultHeaders)
-	if err != nil {
-		return nil, err
-	}
-
 	for i := 0; i <= retryCount; i++ {
+		req, err = request.computeWithContext(ctx, entryPoint, c.defaultHeaders)
+		if err != nil {
+			return nil, err
+		}
+
 		resp, err = client.Do(req)
 		if err == nil {
 			break

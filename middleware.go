@@ -39,21 +39,13 @@ func (cm *ClientMiddleware) Execute(req *Request, next HandlerFunc) (*Response, 
 	copy(middlewares, cm.middlewares)
 	cm.mutex.RUnlock()
 
-	handler := func(r *Request) (*Response, error) {
-		if len(middlewares) == 0 {
-			return next(r)
+	handler := next
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		m := middlewares[i]
+		nextHandler := handler
+		handler = func(r *Request) (*Response, error) {
+			return m(r, nextHandler)
 		}
-
-		current := middlewares[0]
-		remaining := middlewares[1:]
-
-		return current(r, func(req *Request) (*Response, error) {
-			temp := &ClientMiddleware{
-				middlewares: remaining,
-				mutex:       &sync.RWMutex{},
-			}
-			return temp.Execute(req, next)
-		})
 	}
 
 	return handler(req)

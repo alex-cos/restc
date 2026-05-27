@@ -3,7 +3,9 @@ package restc
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -20,13 +22,19 @@ func DefaultParseResponse(request *Request, response *Response) (any, error) {
 	switch contentType {
 	case TypeApplicationJSON:
 		content = request.GetResponseType()
-		err = json.Unmarshal(response.Bytes(), &content)
+		if reflect.ValueOf(content).Kind() != reflect.Pointer {
+			return nil, errors.New("response type must be a pointer")
+		}
+		err = json.Unmarshal(response.Bytes(), content)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrParseJSON, err)
 		}
 	case TypeApplicationXML, TypeTextXML:
 		content = request.GetResponseType()
-		err = xml.Unmarshal(response.Bytes(), &content)
+		if reflect.ValueOf(content).Kind() != reflect.Pointer {
+			return nil, errors.New("response type must be a pointer")
+		}
+		err = xml.Unmarshal(response.Bytes(), content)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrParseXML, err)
 		}
@@ -50,13 +58,19 @@ func DefaultParseError(request *Request, response *Response) (any, error) {
 	switch contentType {
 	case TypeApplicationJSON:
 		content = request.GetErrorRespType()
-		err = json.Unmarshal(response.Bytes(), &content)
+		if reflect.ValueOf(content).Kind() != reflect.Pointer {
+			return nil, errors.New("error type must be a pointer")
+		}
+		err = json.Unmarshal(response.Bytes(), content)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrParseJSON, err)
 		}
 	case TypeApplicationXML, TypeTextXML:
 		content = request.GetErrorRespType()
-		err = xml.Unmarshal(response.Bytes(), &content)
+		if reflect.ValueOf(content).Kind() != reflect.Pointer {
+			return nil, errors.New("error type must be a pointer")
+		}
+		err = xml.Unmarshal(response.Bytes(), content)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrParseXML, err)
 		}
