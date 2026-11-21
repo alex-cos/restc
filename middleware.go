@@ -1,6 +1,9 @@
 package restc
 
-import "sync"
+import (
+	"slices"
+	"sync"
+)
 
 // HandlerFunc is a function that handles an HTTP request and returns a response or error.
 type HandlerFunc func(req *Request) (*Response, error)
@@ -40,8 +43,7 @@ func (cm *ClientMiddleware) Execute(req *Request, next HandlerFunc) (*Response, 
 	cm.mutex.RUnlock()
 
 	handler := next
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		m := middlewares[i]
+	for _, m := range slices.Backward(middlewares) {
 		nextHandler := handler
 		handler = func(r *Request) (*Response, error) {
 			return m(r, nextHandler)

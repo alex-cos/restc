@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -187,9 +188,7 @@ func (c *Client) SetHeaders(headers map[string]string) {
 	if c.defaultHeaders == nil {
 		c.defaultHeaders = make(map[string]string)
 	}
-	for k, v := range headers {
-		c.defaultHeaders[k] = v
-	}
+	maps.Copy(c.defaultHeaders, headers)
 }
 
 // SetContentType sets the default Content-Type header for all requests.

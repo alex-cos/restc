@@ -16,12 +16,12 @@ func TestRedirectFollowsByDefault(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`)) //nolint: errcheck
 	}))
-	defer target.Close()
+	t.Cleanup(target.Close)
 
 	redirector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, target.URL, http.StatusFound)
 	}))
-	defer redirector.Close()
+	t.Cleanup(redirector.Close)
 
 	client := restc.NewWithClient(redirector.URL, &http.Client{})
 
@@ -38,12 +38,12 @@ func TestRedirectNoRedirect(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`)) //nolint: errcheck
 	}))
-	defer target.Close()
+	t.Cleanup(target.Close)
 
 	redirector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, target.URL, http.StatusFound)
 	}))
-	defer redirector.Close()
+	t.Cleanup(redirector.Close)
 
 	client := restc.NewWithClient(redirector.URL, &http.Client{})
 	client.SetRedirectPolicy(restc.NoRedirect)

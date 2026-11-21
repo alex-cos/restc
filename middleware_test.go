@@ -12,20 +12,20 @@ import (
 func TestMiddlewareSingle(t *testing.T) {
 	t.Parallel()
 
-	var called int32
+	var called atomic.Int32
 
 	client := restc.NewWithClient("https://api.test.com",
 		NewMockClient(http.StatusOK, `{"id": 1}`))
 
 	client.UseMiddleware(func(req *restc.Request, next restc.HandlerFunc) (*restc.Response, error) {
-		atomic.AddInt32(&called, 1)
+		called.Add(1)
 		return next(req)
 	})
 
 	resp, err := client.Execute(restc.Get("users"))
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&called))
+	assert.Equal(t, int32(1), called.Load())
 }
 
 func TestMiddlewareMultipleOrder(t *testing.T) {

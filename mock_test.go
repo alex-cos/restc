@@ -57,7 +57,7 @@ func (m *Mock) Do(req *http.Request) (*http.Response, error) {
 		return nil, errors.New("wrong type")
 	}
 	resp.Request = req
-	if req.Method == "HEAD" {
+	if req.Method == http.MethodHead {
 		resp.Body = nil
 	}
 

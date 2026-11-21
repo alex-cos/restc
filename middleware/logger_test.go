@@ -2,7 +2,6 @@ package middleware_test
 
 import (
 	"bytes"
-	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -94,8 +93,7 @@ func TestLoggerMiddlewareWithContext(t *testing.T) {
 	)
 	client.UseMiddleware(middleware.NewMiddlewareLoggerWith(logger).Handler())
 
-	ctx := context.Background()
-	resp, err := client.ExecuteWithContext(ctx, restc.Get("users"))
+	resp, err := client.ExecuteWithContext(t.Context(), restc.Get("users"))
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 
