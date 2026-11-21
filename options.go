@@ -3,6 +3,7 @@ package restc
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -78,9 +79,7 @@ func WithHeaders(headers map[string]string) Option {
 		if c.defaultHeaders == nil {
 			c.defaultHeaders = make(map[string]string)
 		}
-		for k, v := range headers {
-			c.defaultHeaders[k] = v
-		}
+		maps.Copy(c.defaultHeaders, headers)
 	}
 }
 
@@ -237,8 +236,7 @@ func cloneClientTransport(c *Client) (*http.Transport, *http.Client, bool) {
 	if !ok {
 		return nil, nil, false
 	}
-	// nolint: forcetypeassert
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport := cloneDefaultTransport()
 	if t, ok := httpClient.Transport.(*http.Transport); ok {
 		transport = t
 	}
